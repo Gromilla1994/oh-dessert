@@ -1,0 +1,1273 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Ох, Дезерт! Квест на уценку</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Tiny5&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#120c29; --panel:#1d1640; --line:#fff; --muted:#a99fd8; --pink:#ff5fa2; --yellow:#ffd83a; --navy:#1d2470;
+  --pix:'Press Start 2P', monospace; --txt:'Tiny5','Press Start 2P', monospace;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:#fff;overflow:hidden;user-select:none;-webkit-user-select:none;overscroll-behavior:none}
+button{font-family:var(--pix);cursor:pointer}
+[hidden]{display:none!important}
+
+#app{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;max-width:560px;margin:0 auto;
+  padding:env(safe-area-inset-top,0) 0 env(safe-area-inset-bottom,0)}
+#hud{width:100%;display:flex;justify-content:space-between;align-items:center;padding:8px 10px;font:9px var(--pix);color:var(--muted)}
+#hud #wallet{color:var(--yellow)}
+#cv{image-rendering:pixelated;image-rendering:crisp-edges;display:block;touch-action:none;background:#000;
+  border-top:4px solid #000;border-bottom:4px solid #000}
+#panel{width:100%;flex:1;display:flex;flex-direction:column;gap:10px;padding:10px 10px 12px;min-height:0;overflow:auto}
+
+.box{background:var(--panel);border:4px solid var(--line);box-shadow:0 0 0 4px #000, inset 0 0 0 3px #3a2f78;padding:10px 12px}
+#dlg{position:relative;display:flex;gap:10px;min-height:120px;cursor:pointer}
+#portrait{width:48px;height:72px;image-rendering:pixelated;flex:none;background:#2b2260;border:3px solid #000}
+#who{font:10px var(--pix);margin:2px 0 8px}
+#text{font:18px/1.35 var(--txt);white-space:pre-line}
+#dlg.narr #text{color:#d9d1ff;font-style:italic}
+#next{position:absolute;right:10px;bottom:6px;font:10px var(--pix);color:var(--yellow);animation:blink .8s steps(2) infinite}
+@keyframes blink{50%{opacity:0}}
+#choices{display:flex;flex-direction:column;gap:8px}
+.choice{background:#2b2260;color:#fff;border:3px solid #fff;box-shadow:0 0 0 3px #000;padding:11px 10px;font:16px var(--txt);text-align:left}
+.choice:before{content:'▶ ';color:var(--yellow)}
+.choice:active{background:var(--pink)}
+
+#hint{font:10px/1.6 var(--pix);color:var(--yellow);text-align:center;min-height:16px}
+#pad{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:auto;padding-bottom:4px}
+.pbtn{width:84px;height:84px;background:#2b2260;color:#fff;border:4px solid #fff;box-shadow:0 0 0 4px #000,0 6px 0 4px #000;font-size:22px;touch-action:none}
+.pbtn:active,.pbtn.on{transform:translateY(4px);box-shadow:0 0 0 4px #000;background:var(--pink)}
+#bA{flex:1;height:84px;background:var(--pink);color:#fff;border:4px solid #fff;box-shadow:0 0 0 4px #000,0 6px 0 4px #000;font-size:15px;touch-action:none}
+#bA:active{transform:translateY(4px);box-shadow:0 0 0 4px #000;background:#d63f83}
+.spacer{flex:1}
+
+#gameui{display:flex;flex-direction:column;gap:8px}
+.lbl{font:9px var(--pix);color:var(--muted)}
+.tray,.purse{display:flex;flex-wrap:wrap;gap:7px;min-height:52px;padding:8px;background:#2b2260;border:3px solid #fff;box-shadow:0 0 0 3px #000}
+.tray{border-style:dashed}
+.coin{display:grid;place-items:center;font:9px var(--pix);color:#4a3300;background:#f3c63a;
+  border:3px solid #b78a12;box-shadow:inset 3px 3px 0 #fff3b0, 0 3px 0 #000}
+.coin.s{width:38px;height:38px;filter:grayscale(.55) brightness(1.15)}
+.coin.m{width:44px;height:44px}
+.coin.l{width:52px;height:52px}
+.paymsg{font:16px/1.3 var(--txt);color:var(--yellow);min-height:22px}
+.bigbtn{background:var(--pink);color:#fff;border:4px solid #fff;box-shadow:0 0 0 4px #000,0 6px 0 4px #000;padding:16px 14px;font-size:13px;width:100%}
+.bigbtn:active{transform:translateY(4px);box-shadow:0 0 0 4px #000}
+.bigbtn.alt{background:#2b2260}
+
+#titleui{display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;padding-top:6px}
+.logo{font:26px/1.25 var(--pix);text-shadow:4px 4px 0 var(--navy),-2px -2px 0 #000}
+.logo span{color:var(--yellow)}
+.sub{font:17px/1.4 var(--txt);color:var(--muted)}
+
+.over{position:fixed;inset:0;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;background:#000}
+.ch-num{font:12px var(--pix);color:var(--pink);letter-spacing:2px}
+.ch-title{font:22px/1.4 var(--pix);margin:16px 0}
+.ch-sub{font:18px var(--txt);color:var(--muted)}
+.tap{margin-top:30px;font:9px var(--pix);color:var(--muted);animation:blink 1s steps(2) infinite}
+
+#final{background:rgba(10,6,30,.82);justify-content:flex-start;overflow:auto;padding-top:30px}
+.card{background:#fff;color:#1d2470;border:4px solid #000;box-shadow:8px 8px 0 #000;padding:20px 18px;max-width:420px;width:100%;margin:12px 0 22px}
+.card h2{font:15px/1.5 var(--pix);margin:0}
+.card .age{font:64px var(--pix);color:var(--pink);text-shadow:5px 5px 0 var(--navy);margin:14px 0}
+.card p{font:18px/1.4 var(--txt);color:#222;margin:10px 0}
+.card .from{color:#666;font-style:italic}
+.stats{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:8px}
+.stats div{background:#efeaff;border:3px solid #000;padding:6px 8px;font:14px var(--txt);color:#444}
+.stats b{display:block;font:11px var(--pix);color:var(--navy);margin-bottom:4px}
+.toast{position:fixed;left:50%;top:14%;transform:translateX(-50%);background:var(--yellow);color:#3a2a00;border:4px solid #000;
+  font:11px var(--pix);padding:10px 14px;z-index:40;animation:pop 1.8s forwards;white-space:nowrap}
+@keyframes pop{0%{opacity:0}10%{opacity:1}80%{opacity:1}100%{opacity:0}}
+</style>
+</head>
+<body>
+
+<div id="app">
+  <div id="hud"><span id="chap">ОХ, ДЕЗЕРТ!</span><span id="clock"></span><span id="wallet"></span></div>
+  <canvas id="cv" width="160" height="144"></canvas>
+  <div id="panel">
+    <div id="titleui">
+      <div class="logo">ОХ,<br><span>ДЕЗЕРТ!</span></div>
+      <div class="sub">Квест на уценку за 6,90 ₽<br>В ролях: Женя (21), Олег и Захар</div>
+      <button class="bigbtn" id="btnPlay">▶ ИГРАТЬ</button>
+      <button class="bigbtn alt" id="btnResume" hidden></button>
+    </div>
+    <div id="dlg" class="box" hidden><canvas id="portrait" width="16" height="24"></canvas>
+      <div style="flex:1"><div id="who"></div><div id="text"></div></div><div id="next" hidden>▼</div></div>
+    <div id="choices"></div>
+    <div id="gameui" hidden></div>
+    <div id="hint"></div>
+    <div id="pad" hidden>
+      <button class="pbtn" id="bL">◀</button>
+      <button id="bA">A</button>
+      <span class="spacer" id="padSpacer"></span>
+      <button class="pbtn" id="bR">▶</button>
+    </div>
+  </div>
+</div>
+
+<div id="chapterCard" class="over" hidden>
+  <div class="ch-num" id="chNum"></div>
+  <div class="ch-title" id="chTitle"></div>
+  <div class="ch-sub" id="chSub"></div>
+  <div class="tap">ТАПНИ, ЧТОБЫ ПРОДОЛЖИТЬ</div>
+</div>
+<div id="final" class="over" hidden></div>
+
+<script>
+// ====== Настройки поздравления (можно править) ======
+const CONFIG = {
+  hero: 'Женя',
+  age: 21,
+  wish: 'Пусть жизнь будет как Ох Дезерт по уценке: сладкой, неожиданной и почти бесплатной. ' +
+        'Пусть рядом всегда будут пацаны, которые готовы ждать завоз пять часов ради тебя. ' +
+        'И пусть каждый жёлтый ценник будет твоим!',
+  from: 'С любовью, твои друзья',
+};
+
+// ====== Telegram ======
+const DEV = new URLSearchParams(location.search).has('ch');
+const TG = window.Telegram && window.Telegram.WebApp;
+try { TG.ready(); TG.expand(); TG.disableVerticalSwipes && TG.disableVerticalSwipes();
+      TG.setHeaderColor && TG.setHeaderColor('#120c29'); TG.setBackgroundColor && TG.setBackgroundColor('#120c29'); } catch (e) {}
+function haptic(t) {
+  try {
+    if (!TG || !TG.HapticFeedback) return;
+    if (t === 'ok') TG.HapticFeedback.notificationOccurred('success');
+    else if (t === 'err') TG.HapticFeedback.notificationOccurred('error');
+    else TG.HapticFeedback.impactOccurred(t || 'light');
+  } catch (e) {}
+}
+
+// ====== Утилиты ======
+const $ = s => document.querySelector(s);
+const rnd = n => Math.floor(Math.random() * n);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const sumCoins = arr => arr.reduce((a, b) => a + b, 0);
+const rub = k => (k / 100).toFixed(2).replace('.', ',') + ' ₽';
+const coinLabel = k => k >= 100 ? (k / 100) + '₽' : k + 'к';
+function toast(t) { const d = document.createElement('div'); d.className = 'toast'; d.textContent = t; document.body.appendChild(d); setTimeout(() => d.remove(), 1900); }
+
+// ====== Холст ======
+const W = 160, H = 144, FEET = 126;
+const cv = $('#cv'), ctx = cv.getContext('2d');
+ctx.imageSmoothingEnabled = false;
+function fit() {
+  const avail = innerHeight - 330;
+  const w = Math.max(160, Math.min(innerWidth, 560, avail * W / H));
+  cv.style.width = w + 'px'; cv.style.height = (w * H / W) + 'px';
+}
+addEventListener('resize', fit); fit();
+function R(x, y, w, h, c) { ctx.fillStyle = c; ctx.fillRect(Math.round(x), Math.round(y), w, h); }
+function circ(cx, cy, r, c) { for (let dy = -r; dy <= r; dy++) { const dx = Math.round(Math.sqrt(r * r - dy * dy)); R(cx - dx, cy + dy, dx * 2 + 1, 1, c); } }
+function ptext(s, x, y, c, align, size) {
+  ctx.font = (size || 8) + 'px "Press Start 2P", monospace'; ctx.textAlign = align || 'left'; ctx.textBaseline = 'top';
+  ctx.fillStyle = '#000'; ctx.fillText(s, Math.round(x) + 1, Math.round(y) + 1);
+  ctx.fillStyle = c; ctx.fillText(s, Math.round(x), Math.round(y));
+}
+
+// ====== Спрайты ======
+function spr(rows, pal) { return { rows, pal, w: rows[0].length, h: rows.length }; }
+function drawSpr(c, s, x, y, flip, sc) {
+  sc = sc || 1; x = Math.round(x); y = Math.round(y);
+  for (let j = 0; j < s.h; j++) for (let i = 0; i < s.w; i++) {
+    const ch = s.rows[j][i]; if (ch === '.') continue;
+    c.fillStyle = s.pal[ch]; c.fillRect(x + (flip ? s.w - 1 - i : i) * sc, y + j * sc, sc, sc);
+  }
+}
+const BOTTLE = spr(['.BBB.', '.BBB.', '.CCC.', 'CCCCC', 'NNNNN', 'NWNWN', 'NNNNN', 'NWWWN', 'YYYYY', 'CCCCC', 'CCCCC', '.CCC.'],
+  { B: '#2b38a8', C: '#f7efd6', N: '#1d2470', W: '#fff', Y: '#ffd83a' });
+const COIN = spr(['.DDD.', 'DyYYD', 'DyYYD', 'DYYYD', '.DDD.'], { D: '#b78a12', y: '#fff3b0', Y: '#f3c63a' });
+const HEART = spr(['.RR.RR.', 'RrRRRRR', 'RRRRRRR', '.RRRRR.', '..RRR..', '...R...'], { R: '#ff3a5a', r: '#ffb0c0' });
+const PIGEON = spr(['..GG....', '.GkG....', 'oGPGGG..', '..GGGGGG', '..gGGGg.', '...o.o..'], { G: '#8a90a0', g: '#6a7080', k: '#111', o: '#f08a2a', P: '#5ad0a0' });
+const PUDDLE = spr(['...BBBBBBBB...', '.BBbbBBBBbbBB.', '..BBBBBBBBBB..'], { B: '#3a7ad0', b: '#9ad0ff' });
+const DOG = spr(['.dd........', 'dDDd......d', 'kDDDDDDDDd.', 'DDDDDDDDDD.', '.pDDDDDDDD.', '..DDDDDDDD.', '..D.D..D.D.', '..d.d..d.d.'], { D: '#c07a3a', d: '#7a4a1a', k: '#111', p: '#ff7aa0' });
+const FISH = spr(['.SSSSS.S.', 'SkSSSSSSS', 'SSSSSSSSS', '.SSSSS.S.'], { S: '#7a9ab8', k: '#111' });
+const KEFIR = spr(['..GG..', '.GGGG.', 'WWWWWW', 'WGGGGW', 'WWWWWW', 'WkkkWW', 'WWWWWW', 'WWWWWW'], { G: '#3a9a4a', W: '#f4f4f4', k: '#999' });
+const ONION = spr(['..G...', '..GG..', '.PPPP.', 'PpPPPP', 'PpPPPP', 'PPPPPP', '.PPPP.'], { G: '#5ab05a', P: '#b05ab0', p: '#e0a0e0' });
+const CAN = spr(['SSSSS', 'RRRRR', 'RWWWR', 'RRRRR', 'RWWWR', 'RRRRR', 'SSSSS'], { S: '#ccc', R: '#d23a3a', W: '#fff' });
+const BAG = spr(['.WW......WW.', '.W.W....W.W.', '.W..W..W..W.', '.WWWWWWWWWW.', 'WWWWWWWWWWWW', 'WWWWWWWWWWWW', 'WWWRRWWRRWWW',
+  'WWWWWWWWWWWW', 'WWWRWWWWRWWW', 'WWWWRRRRWWWW', 'wWWWWWWWWWWw', '.wwwwwwwwww.'], { W: '#f4f4f4', w: '#cfcfd8', R: '#ff5fa2' });
+const BRAIN = spr(['..PPPPP...', '.PpPPpPP..', 'PPPpPPPpP.', 'PpPPPpPPP.', 'PPPpPPPpPP', '.PPPPpPPP.', '..PPPPPP..', '....PP....'], { P: '#ff8ac0', p: '#c0508a' });
+const TERM = spr(['GGGGGGGG', 'GKKKKKKG', 'GKggggKG', 'GKggggKG', 'GKKKKKKG', 'GGGGGGGG', '..GGGG..', '..GGGG..', '..GGGG..', '.GGGGGG.'], { G: '#9aa0aa', K: '#222', g: '#3bd18a' });
+const PHONE = spr(['KKKKKKK', 'KSSSSSK', 'KSGGGSK', 'KSGWGSK', 'KSGGGSK', 'KSSSSSK', 'KSSSSSK', 'KSSSSSK', 'KKKKKKK', 'KKKWKKK', 'KKKKKKK'], { K: '#222', S: '#5ad1ff', G: '#3bd18a', W: '#fff' });
+
+// ====== Персонажи ======
+const CH = {
+  'Женя':      { skin: '#f2c39b', hair: '#5a3a22', shirt: '#ff5fa2', pants: '#2b3a8a', shoes: '#222', hat: 'party' },
+  'Олег':      { skin: '#f0bf96', hair: '#1e1e1e', shirt: '#3a8ee8', pants: '#333', shoes: '#eee', glasses: true },
+  'Захар':     { skin: '#e9b48a', hair: '#7a4a2a', shirt: '#4cc06a', pants: '#4a3a2a', shoes: '#222', hat: 'cowboy' },
+  'Галя':      { skin: '#f3c9a5', hair: '#e2512a', shirt: '#2a6ad0', pants: '#333', shoes: '#222', long: true, apron: true },
+  'Баба Зина': { skin: '#efc3a0', hair: '#aaa', shirt: '#7a3aa0', pants: '#5a2a7a', shoes: '#333', hat: 'scarf', scarf: '#d23a3a', skirt: true },
+  'Охранник':  { skin: '#e8b890', hair: '#222', shirt: '#2a3040', pants: '#1a1e26', shoes: '#000', hat: 'cap' },
+  'Самокатчик':{ skin: '#f0c0a0', hair: '#333', shirt: '#ffb020', pants: '#333', shoes: '#222', hat: 'helmet' },
+};
+const COLORS = { 'Женя': '#ff5fa2', 'Олег': '#5ad1ff', 'Захар': '#7cf08a', 'Галя': '#ff8a5c', 'Баба Зина': '#d8a0ff', 'Охранник': '#c8c8ff',
+  'Голубь': '#cfd4e0', 'Касса': '#3bd18a', 'Голос в голове': '#ff8ac0', 'Все': '#ffd83a' };
+
+function drawChar(c, cfg, x, y, frame, flip) {
+  x = Math.round(x); y = Math.round(y);
+  const P = (sx, sy, w, h, col) => { c.fillStyle = col; c.fillRect(flip ? x + 12 - sx - w : x + sx, y + sy, w, h); };
+  if (cfg.skirt) {
+    P(3, 16, 2, 1, cfg.skin); P(7, 16, 2, 1, cfg.skin);
+    P(3, 17, 3, 1, cfg.shoes); P(7, 17, 3, 1, cfg.shoes);
+  } else {
+    const L = frame % 2 === 0 ? [3, 7] : [4, 6];
+    P(L[0], 14, 2, 3, cfg.pants); P(L[1], 14, 2, 3, cfg.pants);
+    P(L[0], 17, 3, 1, cfg.shoes); P(L[1], 17, 3, 1, cfg.shoes);
+  }
+  const sw = frame % 2 === 0 ? 0 : 1;
+  P(2, 8, 8, 6, cfg.shirt); P(2, 8, 1, 6, 'rgba(0,0,0,.18)');
+  P(1, 8 + sw, 1, 4, cfg.shirt); P(10, 8 + (1 - sw), 1, 4, cfg.shirt);
+  P(1, 12 + sw, 1, 1, cfg.skin); P(10, 12 + (1 - sw), 1, 1, cfg.skin);
+  if (cfg.skirt) P(2, 13, 8, 3, cfg.pants);
+  if (cfg.apron) { P(4, 9, 4, 6, '#f4f4f4'); P(4, 9, 4, 1, '#ddd'); }
+  if (cfg.hat === 'scarf') {
+    P(2, 1, 8, 8, cfg.scarf); P(3, 2, 1, 1, '#ffd0d0'); P(8, 6, 1, 1, '#ffd0d0'); P(3, 6, 1, 1, '#ffd0d0');
+    P(4, 3, 5, 5, cfg.skin); P(4, 3, 5, 1, cfg.hair);
+    P(5, 8, 3, 2, cfg.scarf);
+  } else {
+    if (cfg.long) { P(2, 1, 8, 3, cfg.hair); P(2, 3, 2, 7, cfg.hair); }
+    P(3, 2, 6, 6, cfg.skin);
+    if (!cfg.long) { P(3, 1, 6, 2, cfg.hair); P(3, 3, 1, 2, cfg.hair); }
+  }
+  P(5, 4, 1, 1, '#111'); P(7, 4, 1, 1, '#111');
+  P(6, 6, 2, 1, '#b8705a');
+  if (cfg.glasses) { P(4, 4, 5, 1, '#111'); P(4, 4, 2, 2, '#111'); P(7, 4, 2, 2, '#111'); P(5, 4, 1, 1, '#555'); }
+  if (cfg.hat === 'party') {
+    P(5, -4, 1, 1, '#ffd83a'); P(5, -3, 2, 1, '#ff5fa2'); P(4, -2, 3, 1, '#5ad1ff'); P(4, -1, 4, 1, '#ff5fa2'); P(3, 0, 5, 1, '#ffd83a'); P(3, 1, 6, 1, '#5ad1ff');
+  } else if (cfg.hat === 'cowboy') {
+    P(4, -1, 4, 2, '#9a6a3a'); P(4, 0, 4, 1, '#4a2a10'); P(1, 1, 10, 1, '#9a6a3a'); P(3, 2, 6, 1, '#7a4a22');
+  } else if (cfg.hat === 'cap') {
+    P(3, 0, 6, 2, '#1c2440'); P(8, 2, 3, 1, '#111'); P(5, 0, 1, 1, '#ffd83a');
+  } else if (cfg.hat === 'helmet') {
+    P(3, 0, 6, 3, '#ff7a1c'); P(4, 0, 4, 1, '#ffb070');
+  }
+}
+function drawPortrait(name) {
+  const p = $('#portrait'), c = p.getContext('2d');
+  c.clearRect(0, 0, 16, 24); c.imageSmoothingEnabled = false;
+  if (CH[name]) drawChar(c, CH[name], 2, 5, 0, false);
+  else if (name === 'Все') drawChar(c, CH['Женя'], 2, 5, 0, false);
+  else if (name === 'Голубь') drawSpr(c, PIGEON, 4, 10, true);
+  else if (name === 'Голос в голове') drawSpr(c, BRAIN, 3, 8);
+  else if (name === 'Касса') drawSpr(c, TERM, 4, 7);
+  p.hidden = !(CH[name] || ['Все', 'Голубь', 'Голос в голове', 'Касса'].includes(name));
+}
+
+// ====== Локации ======
+const TREE = (x, cam, top) => {
+  R(x - cam + 4, top + 14, 3, 112 - top - 14, '#6a4a2a');
+  circ(x - cam + 5, top + 8, 8, '#e0701a'); circ(x - cam + 1, top + 12, 5, '#f09a2a'); circ(x - cam + 10, top + 11, 5, '#ffc23a');
+};
+const leaves = (w, cam, y0) => { for (let i = 0; i < w; i += 13) R(i - cam, y0 + (i * 7) % 12, 2, 1, i % 3 ? '#f08a2a' : '#ffc23a'); };
+const SKY = {
+  day: ['#6ec0ff', '#8ccfff', '#a8dcff'],
+  sunset: ['#5a3a8a', '#c05a8a', '#f08a6b', '#ffb46b'],
+  night: ['#0b0a24', '#141238', '#1e1a4a'],
+};
+function sky(cam, kind, h) {
+  const b = SKY[kind]; const bh = Math.ceil(h / b.length);
+  b.forEach((c, i) => R(0, i * bh, W, bh, c));
+  if (kind === 'night') for (let i = 0; i < 30; i++) R((i * 53 + 7) % W, (i * 31) % (h - 10), 1, 1, '#fff');
+  if (kind === 'sunset') circ(30 - cam * 0.2, h - 6, 10, '#ffe08a');
+}
+function shopFront(x, cam, lit) {
+  R(x - cam, 64, 88, 48, '#a8e0b0'); R(x - cam, 64, 88, 2, '#7ab88a');
+  R(x - cam + 4, 68, 80, 13, '#1d2470'); ptext('ПРОДУКТЫ', x - cam + 44, 71, '#ffd83a', 'center');
+  R(x - cam + 52, 86, 22, 26, '#555'); R(x - cam + 54, 88, 18, 24, lit ? '#ffe9a0' : '#8fd3ff'); R(x - cam + 62, 88, 1, 24, '#555');
+  R(x - cam + 6, 88, 38, 18, '#555'); R(x - cam + 8, 90, 34, 14, lit ? '#ffe9a0' : '#bfe8ff');
+  drawSpr(ctx, BOTTLE, x - cam + 12, 91); drawSpr(ctx, BOTTLE, x - cam + 20, 91); R(x - cam + 30, 94, 8, 6, '#ffd83a');
+}
+const ROOMS = {
+  home: { w: 160, draw(cam) {
+    R(0, 0, W, 110, '#5b3b9a'); for (let x = 0; x < W; x += 8) R(x, 0, 4, 108, '#55368f');
+    R(0, 5, W, 1, '#ddd'); ['#ff5fa2', '#ffd83a', '#5ad1ff', '#7cf08a'].forEach((c, k) => { for (let i = k; i < 20; i += 4) { R(i * 8 + 2, 6, 5, 3, c); R(i * 8 + 3, 9, 3, 1, c); R(i * 8 + 4, 10, 1, 1, c); } });
+    R(14, 24, 34, 30, '#f4f4f4'); R(16, 26, 30, 26, '#8fd3ff'); R(30, 26, 2, 26, '#f4f4f4'); R(16, 38, 30, 2, '#f4f4f4'); R(18, 29, 8, 3, '#fff');
+    R(60, 24, 20, 28, '#1d2470'); R(60, 24, 20, 2, '#ffd83a'); drawSpr(ctx, BOTTLE, 67, 31); ptext('OH!', 70, 45, '#fff', 'center', 6);
+    R(100, 40, 1, 30, '#ddd'); circ(100, 34, 6, '#ff3a5a'); R(98, 31, 2, 2, '#ffb0c0');
+    R(112, 36, 1, 34, '#ddd'); circ(112, 30, 6, '#ffd83a'); R(110, 27, 2, 2, '#fff8c0');
+    R(0, 108, W, 2, '#3a2466'); R(0, 110, W, 34, '#8a5a35');
+    for (let y = 118; y < H; y += 8) { R(0, y, W, 1, '#6e4528'); for (let x = (y / 8 % 2) * 12; x < W; x += 24) R(x, y - 7, 1, 7, '#6e4528'); }
+    R(2, 84, 4, 26, '#6a3a1a'); R(2, 98, 58, 10, '#6a3a1a'); R(6, 94, 52, 5, '#f4f4f4'); R(20, 92, 38, 7, '#ff7ab0'); R(20, 92, 38, 1, '#ffa0c8'); R(8, 90, 11, 5, '#fff');
+    R(134, 50, 22, 60, '#4a2a12'); R(136, 52, 18, 56, '#8a5a2a'); R(138, 56, 14, 20, '#7a4a22'); R(138, 80, 14, 24, '#7a4a22'); R(150, 80, 2, 2, '#ffd83a');
+  } },
+  street: { w: 480, draw(cam, o) {
+    sky(cam, o.sky || 'day', 112);
+    [[0, 70, 72, '#d9c7a8'], [76, 56, 86, '#c8d0dc'], [140, 70, 66, '#e0b8a0'], [216, 60, 90, '#c8d0dc'], [340, 44, 74, '#d9c7a8']].forEach(([bx, bw, bh, c]) => {
+      R(bx - cam, 112 - bh, bw, bh, c); R(bx - cam, 112 - bh, bw, 2, 'rgba(0,0,0,.15)');
+      for (let wy = 112 - bh + 6; wy < 100; wy += 12) for (let wx = bx + 5; wx < bx + bw - 6; wx += 10)
+        R(wx - cam, wy, 6, 7, ((wx * 7 + wy * 3) % 5 === 0) ? '#ffe58a' : '#5a6a8a');
+    });
+    R(22 - cam, 90, 16, 22, '#4a3a2a'); R(18 - cam, 86, 24, 4, '#888'); R(35 - cam, 100, 1, 2, '#ffd83a');
+    [120, 206, 330].forEach(t => TREE(t, cam, 70));
+    R(286 - cam, 82, 52, 30, '#f4f4f4'); R(286 - cam, 76, 52, 12, '#d23a3a'); ptext('ШАУРМА', 312 - cam, 78, '#fff', 'center');
+    R(292 - cam, 92, 40, 12, '#ffd9a0'); R(304 - cam, 94, 6, 8, '#8a5a2a'); R(286 - cam, 104, 52, 2, '#bbb');
+    shopFront(392, cam, false);
+    R(0, 112, W, 18, '#b8b8c4'); for (let x = -(cam % 16); x < W; x += 16) R(x, 112, 1, 18, '#a4a4b4');
+    R(0, 130, W, 2, '#777'); R(0, 132, W, 12, '#4a4a55'); for (let x = -(cam % 20); x < W; x += 20) R(x, 138, 10, 1, '#ddd');
+    leaves(480, cam, 113);
+  } },
+  shop: { w: 240, draw(cam, o) {
+    R(0, 0, W, 110, '#e8eef8'); R(0, 0, W, 8, '#2a6ad0'); for (let x = 10; x < 240; x += 40) R(x - cam, 8, 18, 2, '#fff');
+    R(26 - cam, 14, 62, 12, '#ff5fa2'); ptext('МОЛОКО', 57 - cam, 16, '#fff', 'center');
+    R(8 - cam, 30, 98, 80, '#9aa4b8');
+    for (let i = 0; i < 3; i++) {
+      const dx = 10 + i * 32;
+      R(dx - cam, 32, 30, 76, '#cfefff');
+      for (let s = 0; s < 4; s++) {
+        const sy = 36 + s * 18;
+        R(dx - cam, sy + 13, 30, 1, '#7a8aa8');
+        for (let b = 0; b < 4; b++) {
+          const bx = dx + 2 + b * 7;
+          if (i === 0 && s === 3 && o.empty) continue;
+          drawSpr(ctx, BOTTLE, bx - cam, sy + 1);
+          R(bx - cam, sy + 14, 5, 2, (o.yellow && i === 0 && s === 3 && b === 0) ? '#ffd83a' : '#fff');
+        }
+      }
+      R(dx - cam + 27, 60, 1, 10, '#888');
+    }
+    R(112 - cam, 46, 50, 64, '#c8a070');
+    for (let s = 0; s < 4; s++) {
+      R(112 - cam, 60 + s * 14, 50, 2, '#8a6a40');
+      for (let b = 0; b < 6; b++) R(115 + b * 8 - cam, 50 + s * 14, 6, 10, ['#d23a3a', '#ffd83a', '#5ad1ff', '#7cf08a', '#ff8ac0', '#f4f4f4'][(b + s) % 6]);
+    }
+    R(166 - cam, 94, 50, 3, '#a8743a'); R(168 - cam, 97, 46, 13, '#8a5a2a'); R(176 - cam, 86, 12, 8, '#555'); R(178 - cam, 87, 8, 4, '#3bd18a');
+    R(222 - cam, 78, 16, 32, '#8a909a'); R(224 - cam, 80, 12, 9, '#222'); R(225 - cam, 81, 10, 7, '#3bd18a'); R(224 - cam, 94, 12, 3, '#555');
+    for (let y = 110; y < H; y += 8) for (let x = -(cam % 16); x < W; x += 8) R(x, y, 8, 8, ((x + cam) / 8 + y / 8) % 2 ? '#cfd6e6' : '#bcc4d8');
+  } },
+  bench: { w: 160, draw(cam, o) {
+    const kind = o.sky || 'sunset', night = kind === 'night';
+    sky(cam, kind, 112);
+    TREE(4, cam, 64);
+    shopFront(80, cam, night);
+    R(75, 58, 2, 54, '#333'); R(71, 56, 10, 3, '#333'); if (night) { R(72, 59, 8, 2, '#ffe58a'); R(67, 61, 18, 1, 'rgba(255,229,138,.3)'); }
+    R(0, 112, W, 32, night ? '#55556a' : '#8a8a96'); leaves(160, cam, 114);
+    R(26, 92, 46, 3, '#a0642a'); R(26, 96, 46, 2, '#8a5420'); R(26, 101, 46, 3, '#a0642a'); R(30, 104, 2, 8, '#333'); R(66, 104, 2, 8, '#333');
+  } },
+  backdoor: { w: 160, draw(cam) {
+    sky(cam, 'night', 60);
+    R(0, 40, W, 72, '#6a3226'); for (let y = 40; y < 112; y += 6) { R(0, y, W, 1, '#4a2018'); for (let x = (y / 6 % 2) * 6; x < W; x += 12) R(x, y, 1, 6, '#4a2018'); }
+    R(108, 74, 22, 38, '#333'); R(110, 76, 18, 36, '#5a5a66'); R(126, 92, 1, 3, '#ffd83a'); R(114, 68, 10, 3, '#ffe58a'); R(110, 71, 18, 1, 'rgba(255,229,138,.4)');
+    R(2, 74, 68, 32, '#eee'); R(2, 74, 68, 2, '#ccc'); ptext('ЗАВОЗ', 36, 84, '#1d2470', 'center');
+    R(70, 84, 22, 22, '#dcdcdc'); R(76, 87, 12, 8, '#8fd3ff');
+    R(0, 112, W, 32, '#44444f');
+    [16, 56, 82].forEach(x => { circ(x, 108, 5, '#222'); circ(x, 108, 2, '#888'); });
+    for (let i = 0; i < 3; i++) { R(136 + i * 6, 104 - i * 6, 10, 8, '#c8a070'); R(136 + i * 6, 104 - i * 6, 10, 1, '#a8804a'); }
+  } },
+};
+
+// ====== Мир ======
+const world = { room: ROOMS.home, opts: {}, cam: 0, actors: [], party: [], control: false, target: null, speaker: null, phone: false };
+const input = { L: false, R: false, onA: null };
+function addActor(n, x, face) { const a = { n, x, face, dist: 0, moving: false, tx: null, cb: null }; world.actors.push(a); return a; }
+const actor = n => world.actors.find(a => a.n === n);
+function setRoom(id, o) {
+  o = o || {};
+  world.room = ROOMS[id]; world.opts = o; world.actors = []; world.target = null; world.control = false; world.phone = false;
+  const px = o.x != null ? o.x : 16;
+  addActor('Женя', px, o.face || 1);
+  world.party = (o.party || []).slice();
+  world.party.forEach((n, i) => addActor(n, px - (o.face || 1) * 13 * (i + 1), o.face || 1));
+  (o.npc || []).forEach(a => addActor(a[0], a[1], a[2] || -1));
+  world.cam = clamp(px + 6 - W / 2, 0, world.room.w - W);
+  if (o.clock) $('#clock').textContent = '🕒 ' + o.clock;
+  mode = WORLD;
+}
+function moveActor(n, x) { return new Promise(res => { const a = actor(n); a.tx = x; a.cb = res; }); }
+function walk(x, hint) {
+  return new Promise(res => {
+    world.target = { x, res }; world.control = true;
+    showPanel('pad'); setPad({ L: true, R: true }); $('#hint').textContent = hint || '';
+  });
+}
+const WORLD = {
+  update(dt) {
+    const p = actor('Женя');
+    for (const a of world.actors) a.moving = false;
+    if (world.control) {
+      const dir = (input.R ? 1 : 0) - (input.L ? 1 : 0);
+      if (dir) { const nx = clamp(p.x + dir * 44 * dt, 2, world.room.w - 14); p.dist += Math.abs(nx - p.x); p.x = nx; p.face = dir; p.moving = true; }
+      if (world.target && Math.abs(p.x - world.target.x) <= 5) {
+        const t = world.target; world.target = null; world.control = false; input.L = input.R = false;
+        document.querySelectorAll('.pbtn').forEach(b => b.classList.remove('on'));
+        $('#hint').textContent = ''; showPanel('none'); t.res();
+      }
+    }
+    for (const a of world.actors) if (a.tx != null) {
+      const d = a.tx - a.x, s = Math.sign(d) * Math.min(Math.abs(d), 40 * dt);
+      a.x += s; a.dist += Math.abs(s); a.face = Math.sign(d) || a.face; a.moving = true;
+      if (Math.abs(a.tx - a.x) < .5) { a.x = a.tx; a.tx = null; a.moving = false; const cb = a.cb; a.cb = null; cb && cb(); }
+    }
+    world.party.forEach((n, i) => {
+      const f = actor(n); if (!f || f.tx != null) return;
+      const want = p.x - p.face * 13 * (i + 1), d = want - f.x;
+      if (Math.abs(d) > 3) { const s = Math.sign(d) * Math.min(Math.abs(d), 48 * dt); f.x += s; f.dist += Math.abs(s); f.face = Math.sign(d); f.moving = true; }
+      else if (!p.moving) f.face = p.face;
+    });
+    const tc = clamp(p.x + 6 - W / 2, 0, world.room.w - W);
+    world.cam += (tc - world.cam) * Math.min(1, dt * 6);
+  },
+  draw(time) {
+    const cam = Math.round(world.cam);
+    world.room.draw(cam, world.opts);
+    const order = world.actors.slice().sort((a, b) => (a.n === 'Женя') - (b.n === 'Женя'));
+    for (const a of order) {
+      const isSpeaker = world.speaker === a.n || (world.speaker === 'Все' && ['Женя', 'Олег', 'Захар'].includes(a.n));
+      if (a.n === 'Голубь') {
+        drawSpr(ctx, PIGEON, a.x - cam, FEET - 6, a.face > 0);
+      } else {
+        const fr = a.moving ? Math.floor(a.dist / 4) % 2 : 0;
+        drawChar(ctx, CH[a.n], a.x - cam, FEET - 18, fr, a.face < 0);
+        if (a.n === 'Женя' && world.phone) R(a.x - cam + (a.face < 0 ? 0 : 9), FEET - 15, 2, 4, '#222');
+      }
+      if (isSpeaker) {
+        const bx = a.x - cam + 2, by = (a.n === 'Голубь' ? FEET - 16 : FEET - 30) + (Math.floor(time * 3) % 2);
+        R(bx, by, 9, 6, '#fff'); R(bx + 3, by + 6, 2, 2, '#fff'); R(bx + 2, by + 2, 1, 1, '#000'); R(bx + 4, by + 2, 1, 1, '#000'); R(bx + 6, by + 2, 1, 1, '#000');
+      }
+    }
+    if (world.target && world.control) {
+      const tx = world.target.x + 6 - cam, by = 84 + Math.round(Math.sin(time * 6) * 2);
+      if (tx >= -4 && tx <= W + 4) { R(tx - 3, by, 7, 2, '#ffd83a'); R(tx - 2, by + 2, 5, 2, '#ffd83a'); R(tx - 1, by + 4, 3, 2, '#ffd83a'); R(tx, by + 6, 1, 1, '#ffd83a'); }
+      else if (Math.floor(time * 3) % 2) ptext(tx > W ? '>' : '<', tx > W ? W - 10 : 2, 60, '#ffd83a');
+    }
+  },
+};
+
+// ====== Панель: диалоги и кнопки ======
+let mode = null, advanceFn = null;
+function showPanel(which) {
+  $('#dlg').hidden = which !== 'dialog';
+  $('#pad').hidden = !(which === 'pad' || which === 'game');
+  $('#gameui').hidden = which !== 'ui';
+  $('#titleui').hidden = which !== 'title';
+  if (which !== 'dialog') $('#choices').innerHTML = '';
+}
+function setPad(o) {
+  $('#bL').hidden = !o.L; $('#bR').hidden = !o.R;
+  $('#bA').hidden = !o.A; if (o.A) $('#bA').textContent = o.A;
+  $('#padSpacer').hidden = !!o.A;
+}
+function setLine(who) {
+  world.speaker = who;
+  $('#who').textContent = who === 'Рассказчик' ? '' : who.toUpperCase();
+  $('#who').style.color = COLORS[who] || '#fff';
+  $('#dlg').classList.toggle('narr', who === 'Рассказчик');
+  drawPortrait(who);
+}
+function say(who, text) {
+  return new Promise(res => {
+    showPanel('dialog'); setLine(who);
+    const el = $('#text'), next = $('#next'), t0 = performance.now();
+    let i = 0, done = false;
+    el.textContent = ''; next.hidden = true;
+    const timer = setInterval(() => { i++; el.textContent = text.slice(0, i); if (i >= text.length) finish(); }, 22);
+    function finish() { clearInterval(timer); el.textContent = text; done = true; next.hidden = false; }
+    advanceFn = () => {
+      if (performance.now() - t0 < 150) return;
+      if (!done) { finish(); return; }
+      advanceFn = null; world.speaker = null; res();
+    };
+  });
+}
+function ask(who, text, opts) {
+  return new Promise(res => {
+    showPanel('dialog'); setLine(who);
+    $('#text').textContent = text; $('#next').hidden = true;
+    const box = $('#choices'); box.innerHTML = '';
+    opts.forEach((o, i) => {
+      const b = document.createElement('button'); b.className = 'choice'; b.textContent = o;
+      b.onclick = () => { box.innerHTML = ''; world.speaker = null; haptic('light'); res(i); };
+      box.appendChild(b);
+    });
+  });
+}
+async function lines(arr) { for (const [w, t] of arr) await say(w, t); }
+function chapterCard(num, title, sub) {
+  return new Promise(res => {
+    const el = $('#chapterCard');
+    $('#chNum').textContent = num.toUpperCase(); $('#chTitle').textContent = title.toUpperCase(); $('#chSub').textContent = sub || '';
+    el.hidden = false; const t0 = performance.now();
+    el.onclick = () => { if (performance.now() - t0 < 400) return; el.hidden = true; el.onclick = null; haptic('light'); res(); };
+  });
+}
+$('#dlg').addEventListener('click', () => advanceFn && advanceFn());
+
+// ====== Ввод ======
+function holdBtn(el, key) {
+  const on = e => { e.preventDefault(); input[key] = true; el.classList.add('on'); try { el.setPointerCapture(e.pointerId); } catch (_) {} haptic('light'); };
+  const off = () => { input[key] = false; el.classList.remove('on'); };
+  el.addEventListener('pointerdown', on); el.addEventListener('pointerup', off); el.addEventListener('pointercancel', off); el.addEventListener('lostpointercapture', off);
+}
+holdBtn($('#bL'), 'L'); holdBtn($('#bR'), 'R');
+$('#bA').addEventListener('pointerdown', e => { e.preventDefault(); input.onA && input.onA(); });
+addEventListener('keydown', e => {
+  if (e.key === 'ArrowLeft') input.L = true;
+  if (e.key === 'ArrowRight') input.R = true;
+  if (e.repeat) return;
+  if ([' ', 'Enter', 'ArrowUp', 'z', 'x'].includes(e.key)) { e.preventDefault(); if (advanceFn) advanceFn(); else if (input.onA) input.onA(); }
+});
+addEventListener('keyup', e => { if (e.key === 'ArrowLeft') input.L = false; if (e.key === 'ArrowRight') input.R = false; });
+let touchKey = null;
+const local = e => { const r = cv.getBoundingClientRect(); return { x: (e.clientX - r.left) * W / r.width, y: (e.clientY - r.top) * H / r.height }; };
+cv.addEventListener('pointerdown', e => {
+  e.preventDefault();
+  const p = local(e);
+  if (advanceFn) { advanceFn(); return; }
+  if (mode && mode.pointer) { mode.pointer('down', p.x, p.y); return; }
+  if (mode === WORLD && world.control) { touchKey = p.x < W / 2 ? 'L' : 'R'; input[touchKey] = true; try { cv.setPointerCapture(e.pointerId); } catch (_) {} }
+});
+cv.addEventListener('pointermove', e => { if (mode && mode.pointer) { const p = local(e); mode.pointer('move', p.x, p.y, e.buttons); } });
+const cvUp = () => { if (touchKey) { input[touchKey] = false; touchKey = null; } };
+cv.addEventListener('pointerup', cvUp); cv.addEventListener('pointercancel', cvUp);
+
+// ====== Главный цикл ======
+let lastT = performance.now(), clockT = 0;
+function loop(now) {
+  const dt = Math.min(0.05, (now - lastT) / 1000); lastT = now; clockT += dt;
+  if (mode) { mode.update && mode.update(dt); ctx.clearRect(0, 0, W, H); mode.draw(clockT); }
+  requestAnimationFrame(loop);
+}
+
+// ====== Состояние и сохранение ======
+const SAVE_KEY = 'ohdessert-pixel-v1';
+let state = freshState();
+function freshState() { return { ch: 0, coins: [], tries: 0, start: Date.now(), shawarma: false, bossFails: 0 }; }
+function save() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); } catch (e) {} }
+function load() { try { return JSON.parse(localStorage.getItem(SAVE_KEY)); } catch (e) { return null; } }
+function updateWallet() { $('#wallet').textContent = '🪙 ' + rub(sumCoins(state.coins)); }
+
+// ====== Мини-игры ======
+function bar(x, y, w, h, frac, col) { R(x - 1, y - 1, w + 2, h + 2, '#000'); R(x, y, w, h, '#2b2260'); R(x, y, Math.round(w * clamp(frac, 0, 1)), h, col); }
+async function retryLoop(play, fail) {
+  for (;;) {
+    const r = await play();
+    if (r === true || (r && r.ok)) return r;
+    haptic('err'); state.tries++;
+    await say('Рассказчик', typeof fail === 'function' ? fail(r) : fail);
+  }
+}
+function playMode(m, pad) {
+  return new Promise(res => {
+    m.finish = v => { m.active = false; input.onA = null; input.L = input.R = false; m.pointer = null; showPanel('none'); res(v); };
+    m.reset(); m.active = true; mode = m;
+    showPanel('game'); setPad(pad); input.onA = m.onA || null;
+  });
+}
+
+// --- 1. Разбуди Захара
+function makeWake() {
+  const NEED = 35, TIME = 10;
+  const m = {
+    reset() { m.count = 0; m.started = 0; m.left = TIME; m.shake = 0; m.pointer = (t) => { if (t === 'down') m.onA(); }; },
+    onA() {
+      if (!m.active) return;
+      if (!m.started) m.started = performance.now();
+      m.count++; m.shake = .15; haptic('light');
+      if (m.count >= NEED) m.finish(true);
+    },
+    update(dt) {
+      m.shake = Math.max(0, m.shake - dt);
+      if (m.active && m.started) { m.left = TIME - (performance.now() - m.started) / 1000; if (m.left <= 0) m.finish(false); }
+    },
+    draw(t) {
+      R(0, 0, W, H, '#1e2a5a'); for (let x = 0; x < W; x += 10) R(x, 0, 5, 112, '#22306a');
+      R(110, 20, 30, 24, '#0b0a24'); R(112, 22, 26, 20, '#141238'); circ(130, 30, 4, '#ffe8a0');
+      R(0, 112, W, 32, '#4a3a2a');
+      R(20, 98, 90, 14, '#5a3a1a'); R(20, 86, 5, 26, '#5a3a1a'); R(24, 94, 84, 5, '#eee');
+      const frac = (m.count || 0) / NEED;
+      ctx.save(); ctx.translate(30, 98); ctx.rotate(-Math.PI / 2); drawChar(ctx, CH['Захар'], -2, -2, 0, false); ctx.restore();
+      R(46, 90, 60, 8, '#4a7ad0'); R(46, 90, 60, 1, '#7aa0e8');
+      const zs = frac > .75 ? '!' : 'Z';
+      for (let i = 0; i < 3; i++) ptext(zs, 40 + i * 8, 76 - ((t * 12 + i * 8) % 24), '#fff');
+      const sx = m.shake > 0 ? (Math.random() * 4 - 2) : 0;
+      drawSpr(ctx, PHONE, 124 + sx, 70, false, 2);
+      bar(10, 10, 140, 6, frac, '#ffd83a');
+      ptext((m.count || 0) + '/' + NEED, 10, 20, '#fff');
+      ptext((m.started ? Math.max(0, m.left) : TIME).toFixed(1) + 'с', 150, 20, '#fff', 'right');
+    },
+  };
+  return m;
+}
+async function gameWake() {
+  const m = makeWake(); m.reset(); mode = m;
+  await say('Рассказчик', 'Захар спит. Захар всегда спит до двух часов дня. Сделай 35 звонков за 10 секунд — жми ЗВОНИТЬ как не в себя! Таймер пойдёт с первого нажатия.');
+  await retryLoop(() => playMode(m, { A: '📞 ЗВОНИТЬ' }), 'Захар перевернулся на другой бок и пробормотал «ещё пять минуточек»… Давай ещё раз.');
+  haptic('ok');
+}
+
+// --- 2. Дорога (платформер)
+function makeRunner() {
+  const DUR = DEV ? 6 : 35, PX = 44, GRAV = 560, JUMP = 205;
+  const TYPES = [
+    { k: 'puddle', s: PUDDLE, w: 14, h: 3, n: 'Лужа!' },
+    { k: 'pigeon', s: PIGEON, w: 8, h: 6, n: 'Голубь атаковал!' },
+    { k: 'dog', s: DOG, w: 11, h: 8, n: 'Собака!' },
+    { k: 'scooter', w: 12, h: 20, n: 'Самокатчик!' },
+  ];
+  const COINS = [10, 10, 10, 10, 50, 50, 100, 100, 200, 500];
+  const m = {
+    reset() {
+      Object.assign(m, { t: 0, y: 0, vy: 0, hearts: DEV ? 99 : 3, inv: 0, objs: [], floats: [], scroll: 0, spawn: 1.2, fr: [{ y: 0, vy: 0 }, { y: 0, vy: 0 }], reason: '' });
+      m.pointer = (t) => { if (t === 'down') m.onA(); };
+    },
+    onA() { if (m.active && m.y === 0) { m.vy = -JUMP; haptic('light'); } },
+    update(dt) {
+      if (!m.active) return;
+      m.t += dt;
+      const speed = 72 + m.t * 1.6;
+      m.scroll += speed * dt;
+      if (m.y < 0 || m.vy < 0) { m.vy += GRAV * dt; m.y = Math.min(0, m.y + m.vy * dt); if (m.y === 0) m.vy = 0; }
+      m.fr.forEach((f, i) => {
+        const fx = 26 - i * 14;
+        if (f.y === 0 && f.vy === 0 && m.objs.some(o => !o.coin && o.x > fx + 6 && o.x < fx + 16)) f.vy = -JUMP;
+        if (f.y < 0 || f.vy < 0) { f.vy += GRAV * dt; f.y = Math.min(0, f.y + f.vy * dt); if (f.y === 0) f.vy = 0; }
+      });
+      m.spawn -= dt;
+      if (m.spawn <= 0 && m.t < DUR - 2) {
+        m.spawn = Math.max(.7, 1.25 - m.t * .015) + Math.random() * .5;
+        if (Math.random() < .35) {
+          const air = Math.random() < .5;
+          for (let i = 0; i < 3; i++) m.objs.push({ coin: COINS[rnd(COINS.length)], x: W + 4 + i * 9, y: air ? FEET - 30 - (i === 1 ? 4 : 0) : FEET - 7 });
+        } else {
+          const ty = TYPES[rnd(TYPES.length)];
+          m.objs.push({ ...ty, x: W + 4, y: FEET - ty.h });
+        }
+      }
+      m.inv -= dt;
+      const py = FEET - 18 + m.y;
+      for (const o of m.objs) {
+        o.x -= speed * dt * (o.k === 'scooter' ? 1.35 : 1);
+        if (o.hit) continue;
+        const ow = o.coin ? 5 : o.w, oh = o.coin ? 5 : o.h;
+        if (PX + 2 < o.x + ow - 1 && PX + 10 > o.x + 1 && py + 2 < o.y + oh && py + 18 > o.y + 1) {
+          o.hit = true;
+          if (o.coin) { state.coins.push(o.coin); m.floats.push({ x: o.x, y: o.y - 4, s: '+' + coinLabel(o.coin), c: '#ffd83a', a: 1 }); haptic('light'); }
+          else if (m.inv <= 0) { m.hearts--; m.inv = 1.2; m.reason = o.n; m.floats.push({ x: PX - 10, y: py - 8, s: o.n.toUpperCase(), c: '#ff5a5a', a: 1.3 }); haptic('heavy'); }
+        }
+      }
+      m.objs = m.objs.filter(o => o.x > -20 && !(o.hit && o.coin));
+      m.floats.forEach(f => { f.y -= 20 * dt; f.a -= dt; }); m.floats = m.floats.filter(f => f.a > 0);
+      updateWallet();
+      if (m.hearts <= 0) m.finish({ ok: false, reason: m.reason });
+      else if (m.t >= DUR) m.finish({ ok: true });
+    },
+    draw(time) {
+      const s = m.scroll || 0;
+      sky(0, 'day', 112);
+      for (let k = -1; k < 4; k++) {
+        const idx = k + Math.floor(s * .3 / 60), bx = k * 60 - (s * .3 % 60), h = 50 + (Math.abs(idx * 37) % 5) * 8;
+        R(bx, 112 - h, 52, h, ['#d9c7a8', '#c8d0dc', '#e0b8a0'][Math.abs(idx) % 3]);
+        for (let wy = 112 - h + 6; wy < 104; wy += 10) for (let wx = 5; wx < 46; wx += 10) R(bx + wx, wy, 5, 6, '#5a6a8a');
+      }
+      for (let k = -1; k < 4; k++) TREE(k * 70 - (s * .6 % 70) + 20, 0, 72);
+      R(0, 112, W, 18, '#b8b8c4'); for (let x = -(s % 16); x < W; x += 16) R(x, 112, 1, 18, '#a4a4b4');
+      R(0, 130, W, 2, '#777'); R(0, 132, W, 12, '#4a4a55'); for (let x = -(s % 20); x < W; x += 20) R(x, 138, 10, 1, '#ddd');
+      for (const o of m.objs || []) {
+        if (o.coin) drawSpr(ctx, COIN, o.x, o.y);
+        else if (o.k === 'scooter') { drawChar(ctx, CH['Самокатчик'], o.x, o.y - 2, 0, true); R(o.x - 1, o.y + 17, 14, 1, '#555'); R(o.x, o.y + 4, 1, 13, '#555'); circ(o.x + 1, o.y + 19, 1, '#222'); circ(o.x + 11, o.y + 19, 1, '#222'); }
+        else drawSpr(ctx, o.s, o.x, o.y + (o.k === 'pigeon' ? Math.round(Math.sin(time * 15)) : 0));
+      }
+      const run = Math.floor(time * 10) % 2;
+      drawChar(ctx, CH['Захар'], 12, FEET - 18 + (m.fr ? m.fr[1].y : 0), run, false);
+      drawChar(ctx, CH['Олег'], 26, FEET - 18 + (m.fr ? m.fr[0].y : 0), 1 - run, false);
+      if (!(m.inv > 0) || Math.floor(time * 14) % 2) drawChar(ctx, CH['Женя'], PX, FEET - 18 + (m.y || 0), m.y < 0 ? 1 : run, false);
+      for (const f of m.floats || []) { ctx.globalAlpha = clamp(f.a, 0, 1); ptext(f.s, f.x, f.y, f.c, 'left', 6); ctx.globalAlpha = 1; }
+      for (let i = 0; i < Math.min(5, m.hearts || 0); i++) drawSpr(ctx, HEART, 4 + i * 9, 4);
+      bar(40, 5, 100, 4, (m.t || 0) / DUR, '#ff5fa2'); R(142, 2, 14, 10, '#a8e0b0'); R(143, 3, 12, 3, '#1d2470');
+    },
+  };
+  return m;
+}
+async function gameRunner() {
+  const m = makeRunner(); m.reset(); mode = m;
+  await say('Рассказчик', 'Доведи пацанов до магазина! Жми ПРЫЖОК (или тапай по экрану), чтобы перепрыгивать лужи, голубей, собак и самокатчиков. Собирай мелочь — на кассе пригодится!');
+  await retryLoop(() => playMode(m, { A: '⬆ ПРЫЖОК' }), r => r.reason + ' Женя выбыл из строя. Мелочь, что успел собрать, осталась в кармане. Ещё раз!');
+  haptic('ok');
+  await say('Рассказчик', 'Дошли! Мелочи в кармане: ' + rub(sumCoins(state.coins)) + '.');
+}
+
+// --- 3. Завоз (ловля)
+function makeCatch(NEED) {
+  const BAD = [FISH, KEFIR, ONION, CAN];
+  const DUR = 50;
+  const m = {
+    reset() {
+      Object.assign(m, { t: 0, x: 74, items: [], got: 0, lives: DEV ? 99 : 3, spawn: .4, floats: [], dist: 0, moving: false, tx: null });
+      m.pointer = (type, px, py, btn) => { if (type === 'down' || btn) m.tx = clamp(px - 6, 2, W - 14); };
+    },
+    update(dt) {
+      if (!m.active) return;
+      m.t += dt;
+      const dir = (input.R ? 1 : 0) - (input.L ? 1 : 0);
+      const ox = m.x;
+      if (dir) { m.x += dir * 95 * dt; m.tx = null; }
+      else if (m.tx != null) { const d = m.tx - m.x; m.x += Math.sign(d) * Math.min(Math.abs(d), 140 * dt); }
+      m.x = clamp(m.x, 2, W - 14); m.dist += Math.abs(m.x - ox); m.moving = Math.abs(m.x - ox) > .01;
+      m.spawn -= dt;
+      if (m.spawn <= 0) {
+        m.spawn = Math.max(.45, .95 - m.t * .01);
+        const good = Math.random() < .5;
+        m.items.push({ good, s: good ? BOTTLE : BAD[rnd(BAD.length)], x: 6 + Math.random() * (W - 18), y: 14, v: 34 + m.t * .9 + Math.random() * 22 });
+      }
+      for (const it of m.items) {
+        it.y += it.v * dt;
+        const cx = it.x + it.s.w / 2;
+        if (!it.hit && it.y + it.s.h > 92 && it.y < 100 && cx > m.x - 2 && cx < m.x + 14) {
+          it.hit = true;
+          if (it.good) { m.got++; haptic('light'); m.floats.push({ x: m.x, y: 84, s: '+1', c: '#ffd83a', a: 1 }); }
+          else { m.lives--; haptic('heavy'); m.floats.push({ x: m.x - 8, y: 84, s: it.s === KEFIR ? 'ПРОСРОЧКА' : 'ФУ!', c: '#ff5a5a', a: 1 }); }
+        }
+      }
+      m.items = m.items.filter(it => !it.hit && it.y < H);
+      m.floats.forEach(f => { f.y -= 18 * dt; f.a -= dt; }); m.floats = m.floats.filter(f => f.a > 0);
+      if (m.got >= NEED) m.finish(true);
+      else if (m.lives <= 0) m.finish({ ok: false, reason: 'Галя: «Ты мне всю витрину селёдкой завалил! Заново!»' });
+      else if (m.t >= DUR) m.finish({ ok: false, reason: 'Время вышло. Галя: «Медленно работаете, пацаны. Ещё раз.»' });
+    },
+    draw() {
+      R(0, 0, W, H, '#2a3352'); for (let y = 20; y < 112; y += 24) R(0, y, W, 2, '#3a4466');
+      for (let i = 0; i < 8; i++) { R(6 + i * 20, 92 - (i % 3) * 10, 14, 10 + (i % 3) * 10 + 10, '#c8a070'); R(6 + i * 20, 92 - (i % 3) * 10, 14, 1, '#a8804a'); }
+      R(0, 112, W, 32, '#44444f');
+      for (const it of m.items || []) { drawSpr(ctx, it.s, it.x, it.y); if (it.good) R(it.x + 4, it.y + 8, 3, 2, '#ffd83a'); }
+      drawChar(ctx, CH['Олег'], 146, FEET - 18, 0, true);
+      drawChar(ctx, CH['Женя'], m.x, FEET - 18, m.moving ? Math.floor(m.dist / 4) % 2 : 0, false);
+      drawSpr(ctx, BAG, m.x, 92);
+      for (const f of m.floats || []) { ctx.globalAlpha = clamp(f.a, 0, 1); ptext(f.s, f.x, f.y, f.c, 'left', 6); ctx.globalAlpha = 1; }
+      R(0, 0, W, 16, 'rgba(0,0,0,.5)');
+      drawSpr(ctx, BOTTLE, 4, 2); ptext((m.got || 0) + '/' + NEED, 12, 5, '#fff');
+      ptext('X' + Math.max(0, 3 - (m.lives || 0)) + '/3', 80, 5, '#ff5a5a', 'center');
+      ptext(Math.ceil(Math.max(0, DUR - (m.t || 0))) + 'с', 156, 5, '#fff', 'right');
+    },
+  };
+  return m;
+}
+async function gameCatch() {
+  const NEED = DEV ? 2 : 10;
+  const m = makeCatch(NEED); m.reset(); mode = m;
+  await say('Рассказчик', 'Лови в пакет-майку Oh!Dessert с жёлтым ценником! Двигайся ◀ ▶ или води пальцем по экрану. Не лови кефир, селёдку и лук — три ошибки и Галя выгонит. Нужно ' + NEED + ' бутылок.');
+  await retryLoop(() => playMode(m, { L: true, R: true }), r => r.reason);
+  haptic('ok');
+  await say('Рассказчик', 'Завоз разгружен! Где-то вдалеке грузчик Валера нервно закурил.');
+}
+
+// --- 4. Босс: Баба Зина
+function makeBoss() {
+  const m = {
+    EV: [
+      [2.5, 'ЗИНА: «Я СЮДА С 1987 ГОДА ХОЖУ!»', m => m.pos -= 7],
+      [5, 'ОЛЕГ ВЦЕПИЛСЯ В ЖЕНЮ! СИЛА ×2', m => m.boostUntil = m.t + 3],
+      [8.5, 'ЗИНА ДОСТАЛА ПЕНСИОННОЕ!', m => m.pos -= 10],
+      [11, 'ЗАХАР: «БАБУЛЬ, ТАМ ЯЙЦА ПО АКЦИИ!»', m => m.freezeUntil = m.t + 2.5],
+      [15, 'ЗИНА: «НУ ВСЁ, ВНУЧОК…»', () => {}],
+    ],
+    reset() {
+      Object.assign(m, { pos: 50, t: 0, boostUntil: -1, freezeUntil: -1, ev: 0, shake: 0 });
+      m.mult = state.bossFails >= 2 ? 1.5 : 1;
+      m.pointer = (t) => { if (t === 'down') m.onA(); };
+      $('#hint').textContent = 'ТЯНИ!';
+    },
+    onA() { if (!m.active) return; m.pos += 3 * (m.t < m.boostUntil ? 2 : 1) * m.mult; m.shake = .1; haptic('light'); },
+    update(dt) {
+      m.shake = Math.max(0, m.shake - dt);
+      if (!m.active) return;
+      m.t += dt;
+      if (m.ev < m.EV.length && m.t >= m.EV[m.ev][0]) { $('#hint').textContent = m.EV[m.ev][1]; m.EV[m.ev][2](m); haptic('medium'); m.ev++; }
+      if (m.t >= m.freezeUntil) m.pos -= Math.min(19, 10 + m.t * .7) * dt;
+      if (m.pos >= 100) { $('#hint').textContent = ''; m.finish(true); }
+      else if (m.pos <= 0) { $('#hint').textContent = ''; m.finish(false); }
+    },
+    draw(time) {
+      ROOMS.shop.draw(30, { empty: true });
+      const p = clamp(m.pos || 50, 0, 100), lean = (p - 50) * .12, sh = m.shake > 0 ? rnd(3) - 1 : 0;
+      const jx = 34 + lean + sh, zx = 104 + lean;
+      if (m.t < m.boostUntil || m.mult > 1) drawChar(ctx, CH['Олег'], jx - 12, FEET - 18, 1, false);
+      if (m.mult > 1) drawChar(ctx, CH['Захар'], jx - 24, FEET - 18, 0, false);
+      drawChar(ctx, CH['Женя'], jx, FEET - 18, m.active ? Math.floor(time * 8) % 2 : 0, false);
+      drawChar(ctx, CH['Баба Зина'], zx, FEET - 18, 0, true);
+      R(jx + 11, FEET - 7, zx - jx - 10, 1, '#c99a5b');
+      drawSpr(ctx, BOTTLE, (jx + 11 + zx) / 2 - 2, FEET - 14);
+      R(0, 0, W, 16, 'rgba(0,0,0,.55)');
+      bar(20, 5, 120, 6, p / 100, '#ff5fa2'); ptext('Ж', 6, 4, '#ff5fa2'); ptext('З', 146, 4, '#d8a0ff');
+    },
+  };
+  return m;
+}
+async function gameBoss() {
+  const m = makeBoss(); m.reset(); mode = m; $('#hint').textContent = '';
+  await say('Рассказчик', 'Баба Зина вцепилась в последнюю уценённую бутылку. Жми ТЯНИ! изо всех сил, чтобы перетянуть её на свою сторону. Пацаны помогут!');
+  await retryLoop(() => playMode(m, { A: '💪 ТЯНИ!' }), () => {
+    state.bossFails++;
+    return 'Баба Зина: «Слабенький какой. Кашу ешь!»' + (state.bossFails >= 2 ? ' Олег и Захар встали за спиной Жени — теперь сила ×1.5!' : ' Реванш!');
+  });
+  haptic('ok');
+}
+
+// --- 5. Касса: ровно 6,90
+function canPay(coins, target) {
+  const dp = new Array(target + 1).fill(false); dp[0] = true;
+  for (const c of coins) for (let s = target; s >= c; s--) if (dp[s - c]) dp[s] = true;
+  return dp[target];
+}
+async function gamePay() {
+  const PRICE = 690;
+  let tray = [];
+  mode = {
+    draw() {
+      R(0, 0, W, H, '#e8eef8'); R(0, 0, W, 8, '#2a6ad0');
+      R(30, 14, 100, 96, '#8a909a'); R(36, 20, 88, 52, '#111'); R(38, 22, 84, 48, '#0b2a22');
+      ptext('К ОПЛАТЕ:', 42, 26, '#7dffb9', 'left', 6); ptext('6,90', 118, 36, '#7dffb9', 'right', 8);
+      ptext('ВНЕСЕНО:', 42, 50, '#7dffb9', 'left', 6); ptext(rub(sumCoins(tray.map(c => c.v))).replace(' ₽', ''), 118, 58, '#ffd83a', 'right', 8);
+      R(56, 80, 48, 6, '#333'); R(60, 82, 40, 2, '#111');
+      drawSpr(ctx, BOTTLE, 136, 98); R(140, 106, 3, 2, '#ffd83a');
+      for (let y = 110; y < H; y += 8) for (let x = 0; x < W; x += 8) R(x, y, 8, 8, (x / 8 + y / 8) % 2 ? '#cfd6e6' : '#bcc4d8');
+      drawChar(ctx, CH['Женя'], 6, FEET - 18, 0, false);
+    },
+  };
+  await say('Касса', 'К оплате: 6,90 ₽. Сдача не выдаётся. Тапай по монеткам, чтобы положить их в лоток. Нужно ровно 6 рублей 90 копеек.');
+  await new Promise(resolve => {
+    const purse = state.coins.map((v, i) => ({ v, id: i })).sort((a, b) => b.v - a.v);
+    const ui = $('#gameui');
+    ui.innerHTML = `<div class="lbl">ЛОТОК (ТАПНИ, ЧТОБЫ ЗАБРАТЬ):</div><div class="tray"></div>
+      <div class="lbl">МЕЛОЧЬ В КАРМАНЕ:</div><div class="purse"></div>
+      <div class="paymsg"></div><button class="bigbtn">ОПЛАТИТЬ</button>`;
+    showPanel('ui');
+    const trayEl = ui.querySelector('.tray'), purseEl = ui.querySelector('.purse'), msg = ui.querySelector('.paymsg');
+    const coinEl = c => `<div class="coin ${c.v <= 50 ? 's' : c.v < 500 ? 'm' : 'l'}" data-id="${c.id}">${coinLabel(c.v)}</div>`;
+    function render() { trayEl.innerHTML = tray.map(coinEl).join(''); purseEl.innerHTML = purse.filter(c => !tray.includes(c)).map(coinEl).join(''); }
+    purseEl.onclick = e => { const el = e.target.closest('.coin'); if (!el) return; tray.push(purse.find(c => c.id === +el.dataset.id)); haptic('light'); render(); };
+    trayEl.onclick = e => { const el = e.target.closest('.coin'); if (!el) return; tray = tray.filter(c => c.id !== +el.dataset.id); haptic('light'); render(); };
+    ui.querySelector('.bigbtn').onclick = () => {
+      const s = sumCoins(tray.map(c => c.v));
+      if (s === PRICE) {
+        haptic('ok');
+        const used = new Set(tray.map(c => c.id));
+        state.coins = state.coins.filter((_, i) => !used.has(i)); updateWallet();
+        ui.innerHTML = ''; showPanel('none'); resolve();
+      } else {
+        haptic('err'); state.tries++;
+        msg.textContent = s > PRICE ? 'Касса: «Сдача не выдаётся». Галя из зала: «БЕЗ СДАЧИ, Я СКАЗАЛА!»'
+          : s === 0 ? 'Захар: «Женя, монетки надо положить, братан.»' : `Не хватает ${rub(PRICE - s)}. Олег: «Ещё чуть-чуть, именинник!»`;
+      }
+    };
+    render();
+  });
+}
+
+// ====== Квиз ======
+const QUIZ = [
+  ['Сколько миллилитров в бутылке Oh!Dessert?', ['500', '900', '1000', 'Сколько не жалко'], 1, 'Девятьсот. Литр — это для богатых.'],
+  ['Кто делает Oh!Dessert?', ['Экомилк', 'Простоквашино', 'Дядя Ашот', 'Я, Галя, по ночам'], 0, 'Экомилк. Запомни, щегол.'],
+  ['Какого вкуса Oh!Dessert НЕ бывает?', ['Пломбир', 'Банан', 'Клубника', 'Шаурма'], 3, 'Шаурмы нет. Пока что.'],
+  ['Сколько суток хранится Oh!Dessert?', ['7', '14', '21', 'Вечно, как моя любовь к уценке'], 2, '21 сутки. Как Жене — 21 год. Совпадение? Не думаю.'],
+  ['Какая у него жирность?', ['0,5%', '2%', '3,2%', 'Жирнее, чем шутки Олега'], 1, 'Два процента. Лёгкий, как кошелёк Захара.'],
+  ['Сколько он стоит БЕЗ уценки?', ['~50 ₽', '~150 ₽', '~500 ₽', 'Бесценно'], 1, 'Около полутора сотен. Грабёж средь бела дня.'],
+  ['Сколько сегодня исполняется Жене?', ['18', '20', '21', 'Вечно 17'], 2, 'Двадцать один. Взрослый мужик, а всё по уценке бегает.'],
+];
+async function gameQuiz() {
+  const NEED = 5;
+  await say('Галя', `Семь вопросов. Ответишь правильно хотя бы на ${NEED} — поговорим.`);
+  for (;;) {
+    let score = 0;
+    for (let i = 0; i < QUIZ.length; i++) {
+      const [q, opts, right, fb] = QUIZ[i];
+      const a = await ask('Галя', `Вопрос ${i + 1}/${QUIZ.length}. ${q}`, opts);
+      if (a === right) { score++; haptic('ok'); await say('Галя', 'Хм. Верно. ' + fb); }
+      else { haptic('err'); await say('Галя', 'Неправильно. Позор. ' + fb); }
+    }
+    if (score >= NEED) { await say('Рассказчик', `Результат: ${score} из ${QUIZ.length}. Галя одобрительно хмыкнула.`); break; }
+    state.tries++;
+    await say('Галя', `${score} из ${QUIZ.length}. Двоечники. Идите учите матчасть. Заново!`);
+  }
+}
+
+// ====== Сюжет ======
+const BOYS = ['Олег', 'Захар'];
+const chapterHud = t => { $('#chap').textContent = t; };
+
+const CHAPTERS = [
+  async function ch1() {
+    await chapterCard('Глава 1', 'Утро именинника', 'Где-то в районе. 12:47.');
+    chapterHud('ГЛ.1 УТРО');
+    setRoom('home', { x: 24, clock: '12:47' });
+    await lines([
+      ['Рассказчик', 'Сегодня Жене исполняется 21. Возраст, когда ты уже можешь всё. Даже легально пить в Америке.'],
+      ['Женя', 'Ммм… Я проснулся. Мне двадцать один. Я взрослый мужчина.'],
+      ['Женя', 'И как взрослый мужчина я хочу только одного…'],
+      ['Голос в голове', 'Ох Дезерт.'],
+      ['Женя', 'Ох. Дезерт.'],
+    ]);
+    await walk(64, 'ПОДОЙДИ К ПЛАКАТУ ▶');
+    await lines([
+      ['Рассказчик', 'Oh!Dessert от «Экомилка». 900 мл сладкого счастья. Банановый. Синяя крышечка. Жёлтая полосочка.'],
+      ['Голос в голове', 'Только вот в магазине он стоит почти 150 рублей.'],
+      ['Женя', 'Сто пятьдесят?! Я что, олигарх?'],
+    ]);
+    const c = await ask('Голос в голове', 'Ну и что делаем, именинник?', ['💸 Купить за 150 ₽ как нормальный человек', '🔥 Найти уценку за 6–7 ₽']);
+    if (c === 0) await lines([
+      ['Голос в голове', 'Ты серьёзно? В свой день рождения? Переплачивать в двадцать раз?'],
+      ['Женя', 'Ладно-ладно, я пошутил. Уценка. Только уценка.'],
+    ]);
+    else await say('Голос в голове', 'Вот это мой мальчик.');
+    await lines([
+      ['Женя', 'Ох Дезерт за 6–7 рублей. Это не покупка. Это охота.'],
+      ['Женя', 'А на охоту в одиночку не ходят. Нужна стая.'],
+    ]);
+    world.phone = true;
+    await lines([
+      ['Олег', 'ИМЕНИННИК! С днюхой, брат! Двадцать один — это сила!'],
+      ['Женя', 'Спасибо, брат. Есть дело. Надо найти Ох Дезерт по уценке.'],
+      ['Олег', 'Почём?'],
+      ['Женя', 'Шесть-семь рублей.'],
+      ['Олег', '…'],
+      ['Олег', 'Я уже обуваюсь.'],
+      ['Женя', 'Теперь Захар.'],
+      ['Рассказчик', 'Захар не берёт трубку. Захар никогда не берёт трубку до двух часов дня.'],
+    ]);
+    await gameWake();
+    setRoom('home', { x: 64, clock: '13:02' }); world.phone = true;
+    await lines([
+      ['Захар', 'Алё… Женёк? С днём рождения, братан… А чё так рано?'],
+      ['Женя', 'Уже час дня.'],
+      ['Захар', 'Вот и я говорю — рано.'],
+      ['Женя', 'Встречаемся у подъезда. Миссия: Ох Дезерт по уценке.'],
+      ['Захар', 'Понял. Беру пакет-майку. Это серьёзно.'],
+    ]);
+    world.phone = false;
+    await walk(138, 'ВЫХОДИ ИЗ ДОМА ▶');
+  },
+  async function ch2() {
+    await chapterCard('Глава 2', 'Дорога', 'Октябрь. Лужи. Голуби. Опасность.');
+    chapterHud('ГЛ.2 ДОРОГА');
+    setRoom('street', { x: 24, clock: '13:30', npc: [['Олег', 70, -1], ['Захар', 84, -1]] });
+    await walk(54, 'ПОДОЙДИ К ПАЦАНАМ ▶');
+    await lines([
+      ['Олег', 'Пацаны, план такой: идём в «Продукты». Там бывает уценка.'],
+      ['Захар', 'Там же продавщица Галя. Она меня с 2019 года не любит.'],
+      ['Женя', 'За что?'],
+      ['Захар', 'Я спросил, свежий ли хлеб.'],
+      ['Олег', 'И?'],
+      ['Захар', 'Она ответила: «А ты свежий?»'],
+      ['Олег', 'Короче. По пути лужи, голуби и самокатчики. Будьте начеку.'],
+      ['Захар', 'И подбирайте мелочь. Монетки по десять копеек — это валюта уценки.'],
+    ]);
+    await gameRunner();
+    setRoom('street', { x: 250, clock: '14:05', party: BOYS });
+    await walk(300, 'ИДИ ДАЛЬШЕ ▶');
+    await lines([
+      ['Рассказчик', 'Пацаны проходят мимо ларька. Пахнет так, что у Олега подкашиваются ноги.'],
+      ['Олег', 'Пацаны… Шаурма.'],
+    ]);
+    const c = await ask('Олег', 'Ну пожалуйста. Одну. На троих.', ['🌯 Взять шаурму', '🙅 Нет! Мы на миссии']);
+    if (c === 0) {
+      state.shawarma = true;
+      await lines([
+        ['Женя', 'В день рождения можно.'],
+        ['Рассказчик', 'Шаурма была великолепна. Олег уронил половину на куртку Захара.'],
+        ['Захар', 'Это была замша…'],
+        ['Олег', 'Зато теперь она пахнет праздником.'],
+      ]);
+    } else await lines([
+      ['Женя', 'Нет, Олег. Сегодня мы пьём, а не едим.'],
+      ['Олег', 'Ладно… Но я это запомню.'],
+    ]);
+    await walk(450, 'ЗАХОДИ В «ПРОДУКТЫ» ▶');
+  },
+  async function ch3() {
+    await chapterCard('Глава 3', 'Продукты', 'Холодильник с молочкой. Галя. Испытание.');
+    chapterHud('ГЛ.3 МАГАЗИН');
+    setRoom('shop', { x: 120, face: -1, clock: '14:20', party: BOYS, npc: [['Галя', 192, -1]] });
+    await walk(40, '◀ К ХОЛОДИЛЬНИКУ С МОЛОЧКОЙ');
+    await lines([
+      ['Рассказчик', 'Холодильник с молочкой. И вот он. Oh!Dessert. Банановый. 900 мл.'],
+      ['Женя', 'Ценник… 149,99 ₽.'],
+      ['Захар', 'А где жёлтый ценник?'],
+      ['Олег', 'ГАЛЯ! ГДЕ УЦЕНКА?!'],
+    ]);
+    await walk(170, 'ИДИ К ГАЛЕ НА КАССУ ▶');
+    await lines([
+      ['Галя', 'Чего орёте? Уценки нет.'],
+      ['Женя', 'Как нет? У меня день рождения.'],
+      ['Галя', 'Поздравляю. Уценки всё равно нет.'],
+      ['Галя', 'О, Захар. Свежий?'],
+      ['Захар', '…'],
+      ['Галя', 'Уценку я выставляю после вечернего завоза. И кому попало не даю.'],
+      ['Захар', 'А кому даёте?'],
+      ['Галя', 'Тем, кто разбирается в продукте. Экзамен.'],
+      ['Олег', 'Женя, давай. Ты же эксперт по Ох Дезерту.'],
+    ]);
+    await gameQuiz();
+    await lines([
+      ['Галя', 'Ладно. Знаешь продукт. Уважаю.'],
+      ['Галя', 'Завоз в семь вечера. Грузчик Валера опять «заболел». Поможете разгрузить — уценка ваша.'],
+      ['Женя', 'А сейчас сколько?'],
+      ['Галя', 'Полтретьего.'],
+      ['Захар', 'ПЯТЬ ЧАСОВ ЖДАТЬ?!'],
+      ['Женя', 'Мы ждали этого 21 год. Подождём ещё пять часов.'],
+    ]);
+  },
+  async function ch4() {
+    await chapterCard('Глава 4', 'Великое ожидание', 'Лавочка у магазина. Пацаны тусуют.');
+    chapterHud('ГЛ.4 ОЖИДАНИЕ');
+    setRoom('bench', { x: 110, face: -1, clock: '15:00', sky: 'sunset', party: BOYS });
+    await walk(44, '◀ К ЛАВОЧКЕ');
+    await say('Рассказчик', 'Пацаны сели на лавочку. Начался чилл.');
+    const done = new Set();
+    const TOPICS = ['🍌 Поспорить, какой вкус лучше', '🐦 Покормить голубей', '👶 Вспомнить детство'];
+    for (let k = 0; k < 2; k++) {
+      const left = TOPICS.map((_, i) => i).filter(i => !done.has(i));
+      const pick = left[await ask('Олег', k === 0 ? 'Ну, чем займёмся?' : 'Ещё часок убить надо. Чё делаем?', left.map(i => TOPICS[i]))];
+      done.add(pick);
+      if (pick === 0) await lines([
+        ['Олег', 'Шоколадный — база.'],
+        ['Захар', 'Клубника. Без вариантов.'],
+        ['Женя', 'Банановый. Это классика. Это как я.'],
+        ['Олег', 'Ну, у кого сегодня днюха, тот и прав. Банановый.'],
+      ]);
+      if (pick === 1) {
+        const g = addActor('Голубь', 150, -1);
+        await moveActor('Голубь', 70);
+        await lines([
+          ['Голубь', 'Курлык.'],
+          ['Захар', 'Пацаны… это тот голубь с дороги. Он нас запомнил.'],
+          ['Голубь', 'Курлык. (угрожающе)'],
+          ['Женя', 'Держи, брат, семечку. Мир?'],
+          ['Голубь', 'Курлык. (уважительно)'],
+        ]);
+        g.face = 1;
+      }
+      if (pick === 2) await lines([
+        ['Женя', 'Когда мне было семь, я мечтал, что вырасту и куплю себе всё, что захочу.'],
+        ['Олег', 'И?'],
+        ['Женя', 'И вот мне двадцать один, и я пятый час жду уценку.'],
+        ['Захар', 'Мечты сбываются, брат.'],
+      ]);
+    }
+    world.opts.sky = 'night'; $('#clock').textContent = '🕒 18:55';
+    await lines([
+      ['Рассказчик', '18:55. Стемнело. Кто-то должен сходить к охраннику и узнать, приехал ли завоз.'],
+      ['Захар', 'Камень-ножницы-бумага. Кто проиграл — тот идёт.'],
+    ]);
+    let win;
+    for (;;) {
+      const i = await ask('Захар', 'Цу-е-фа! Выбирай.', ['✊ Камень', '✌️ Ножницы', '✋ Бумага']);
+      const z = rnd(3), sym = ['✊', '✌️', '✋'];
+      if (i === z) { await say('Рассказчик', `Захар тоже показал ${sym[z]}. Ничья! Ещё раз.`); continue; }
+      win = (i === 0 && z === 1) || (i === 1 && z === 2) || (i === 2 && z === 0);
+      await say('Рассказчик', `Захар показал ${sym[z]}. ${win ? 'Женя победил!' : 'Женя проиграл.'}`);
+      break;
+    }
+    if (win) {
+      world.party = ['Олег'];
+      const z = actor('Захар'), back = z.x;
+      await moveActor('Захар', 170);
+      await say('Рассказчик', 'Через минуту Захар вернулся.');
+      await moveActor('Захар', back);
+      await lines([
+        ['Захар', 'Охранник сказал, что не разговаривает с людьми в шляпах.'],
+        ['Женя', 'Ладно. Пойду сам. Все за мной.'],
+      ]);
+      world.party = BOYS.slice();
+    } else await say('Женя', 'Эх. Именинник идёт работать. Пацаны, за мной.');
+    await walk(146, 'ОБОЙДИ МАГАЗИН С ЧЁРНОГО ХОДА ▶');
+    setRoom('backdoor', { x: 20, clock: '19:00', party: BOYS, npc: [['Охранник', 134, -1]] });
+    await walk(110, 'К ОХРАННИКУ ▶');
+    await lines([
+      ['Охранник', 'Завоз? Приехал. А Валеры нет.'],
+      ['Охранник', 'Галя сказала, вы разгружаете. Ловите аккуратно. Уценённые — с жёлтым ценником.'],
+      ['Олег', 'Пацаны. Это наш момент.'],
+    ]);
+    await gameCatch();
+    setRoom('shop', { x: 150, face: -1, clock: '19:25', party: BOYS, yellow: true, npc: [['Галя', 192, -1]] });
+    await walk(36, '◀ К ХОЛОДИЛЬНИКУ. ТАМ ЖЁЛТЫЙ ЦЕННИК!');
+    await moveActor('Галя', 70);
+    await lines([
+      ['Галя', 'Ничего себе. Работяги. Валеру уволю, вас возьму.'],
+      ['Галя', 'Вот. Oh!Dessert, банановый. Срок до завтра. Уценка девяносто пять процентов.'],
+      ['Галя', 'Шесть рублей девяносто копеек.'],
+      ['Женя', 'ШЕСТЬ. ДЕВЯНОСТО.'],
+      ['Олег', 'Пацаны, я сейчас заплачу.'],
+      ['Галя', 'Последняя бутылка, кстати.'],
+      ['Рассказчик', 'И в этот момент за спиной раздался скрип тележки.'],
+    ]);
+  },
+  async function ch5() {
+    await chapterCard('Глава 5', 'Баба Зина', 'Финальный босс уценки.');
+    chapterHud('ГЛ.5 БОСС');
+    setRoom('shop', { x: 36, face: 1, clock: '19:27', party: BOYS, yellow: true, npc: [['Галя', 70, -1], ['Баба Зина', 230, -1]] });
+    actor('Олег').x = 12; actor('Захар').x = 24;
+    await moveActor('Баба Зина', 100);
+    await lines([
+      ['Баба Зина', 'Молодые люди. Это моя бутылка.'],
+      ['Женя', 'Мы её разгружали!'],
+      ['Баба Зина', 'А я в этот магазин хожу с 1987 года.'],
+      ['Захар', 'Аргумент.'],
+      ['Олег', 'Женя, не сдавайся! Это твой день!'],
+      ['Баба Зина', 'Ну что, внучок. Потягаемся?'],
+    ]);
+    await gameBoss();
+    setRoom('shop', { x: 60, face: 1, clock: '19:30', party: BOYS, npc: [['Баба Зина', 100, -1]], empty: true });
+    await lines([
+      ['Баба Зина', 'Ох… Хватка как у моего деда. Забирай, внучок. С днём рождения.'],
+      ['Женя', 'Спасибо… А откуда вы знаете, что у меня день рождения?'],
+      ['Баба Зина', 'Так у тебя на лбу написано. «МНЕ 21». Маркером.'],
+      ['Женя', 'ОЛЕГ!!!'],
+      ['Олег', 'Ты на лавочке задремал. Маркер, кстати, перманентный. С днюхой!'],
+    ]);
+    await moveActor('Баба Зина', 250);
+  },
+  async function ch6() {
+    await chapterCard('Глава 6', 'Касса', 'Осталось только заплатить. Ровно.');
+    chapterHud('ГЛ.6 КАССА');
+    setRoom('shop', { x: 120, clock: '19:35', party: BOYS, empty: true });
+    await walk(210, 'К КАССЕ САМООБСЛУЖИВАНИЯ ▶');
+    await lines([
+      ['Касса', 'Отсканируйте товар.'],
+      ['Рассказчик', '*пик*'],
+      ['Касса', 'Oh!Dessert банановый. Шесть рублей девяносто копеек.'],
+      ['Касса', 'Неожиданный предмет в зоне упаковки.'],
+      ['Захар', 'Это мой локоть.'],
+      ['Касса', 'Уберите предмет из зоны упаковки.'],
+      ['Олег', 'Захар, убери себя.'],
+      ['Касса', 'Выберите способ оплаты.'],
+      ['Женя', 'Наличными. Мелочью. Как настоящий мужчина.'],
+    ]);
+    if (!canPay(state.coins, 690)) {
+      await lines([
+        ['Женя', 'Так… Чёт мелочи не хватает. Или ровно не набирается.'],
+        ['Захар', 'Эх, ты. Держи, в пакете-майке нашёл.'],
+      ]);
+      state.coins.push(500, 100, 50, 10, 10, 10, 10); updateWallet();
+      toast('ЗАХАР ПОДКИНУЛ МЕЛОЧИ');
+    }
+    await gamePay();
+    mode = WORLD;
+    await lines([
+      ['Касса', 'Оплата прошла. Спасибо за покупку. Возьмите чек.'],
+      ['Рассказчик', 'Галя крикнула из подсобки: «С днём рождения, Женя! Пакет-майка — бесплатно. Один раз в жизни!»'],
+    ]);
+  },
+  async function ch7() {
+    await chapterCard('Финал', 'Ох. Дезерт.', '19:40. Та самая лавочка.');
+    chapterHud('ФИНАЛ');
+    setRoom('bench', { x: 120, face: -1, clock: '19:40', sky: 'night', party: BOYS });
+    await walk(44, '◀ НА ЛАВОЧКУ');
+    addActor('Голубь', 90, -1);
+    await lines([
+      ['Рассказчик', 'Они вернулись на лавочку. Над районом зажглись фонари. Голубь смотрел с уважением.'],
+      ['Рассказчик', '*щёлк* — открылась синяя крышечка.'],
+      ['Женя', '…'],
+      ['Женя', 'Ох. Дезерт.'],
+      ['Олег', 'Ну как?'],
+      ['Женя', 'Это лучшие шесть рублей девяносто копеек в моей жизни.'],
+      ['Захар', 'Дай глотнуть.'],
+      ['Женя', 'Нет.'],
+      ['Захар', 'Я разгружал!'],
+      ['Женя', '…Ладно. По глотку. Сегодня можно.'],
+    ]);
+    if (state.shawarma) await say('Захар', 'Это за мою куртку, которую Олег уделал шаурмой.');
+    await lines([
+      ['Олег', 'Женя. Тост.'],
+      ['Женя', 'За двадцать один. За пацанов. За уценку.'],
+      ['Все', 'ЗА УЦЕНКУ!!!'],
+      ['Голубь', 'Курлык!'],
+    ]);
+    showFinal();
+  },
+];
+
+// ====== Финал: салют ======
+function showFinal() {
+  try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
+  const sparks = [];
+  mode = {
+    update(dt) {
+      WORLD.update(dt);
+      if (Math.random() < dt * 2.2) {
+        const x = 20 + Math.random() * 120, y = 15 + Math.random() * 40, col = ['#ffd83a', '#ff5fa2', '#5ad1ff', '#7cf08a', '#fff'][rnd(5)];
+        for (let i = 0; i < 24; i++) { const a = i / 24 * Math.PI * 2, v = 20 + Math.random() * 20; sparks.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, l: 1.2, col }); }
+      }
+      sparks.forEach(s => { s.x += s.vx * dt; s.y += s.vy * dt; s.vy += 20 * dt; s.l -= dt; });
+      for (let i = sparks.length - 1; i >= 0; i--) if (sparks[i].l <= 0) sparks.splice(i, 1);
+    },
+    draw(t) { WORLD.draw(t); sparks.forEach(s => R(s.x, s.y, 1, 1, s.col)); },
+  };
+  showPanel('none'); $('#hint').textContent = 'С ДНЮХОЙ, ЖЕНЯ!';
+  const ms = Date.now() - state.start, mm = Math.floor(ms / 60000), ss = Math.floor(ms / 1000) % 60;
+  const el = $('#final');
+  setTimeout(() => {
+    el.innerHTML = `<div class="card">
+        <h2>С ДНЁМ РОЖДЕНИЯ, ${CONFIG.hero.toUpperCase()}!</h2>
+        <div class="age">${CONFIG.age}</div>
+        <p>${CONFIG.wish}</p>
+        <p class="from">${CONFIG.from} 🥳</p>
+        <div class="stats">
+          <div><b>${mm}:${String(ss).padStart(2, '0')}</b>время</div>
+          <div><b>6,90₽</b>потрачено</div>
+          <div><b>${state.tries}</b>фейлов</div>
+        </div>
+      </div>
+      <button class="bigbtn" id="seeSalute" style="max-width:420px">🎆 СМОТРЕТЬ САЛЮТ</button>
+      <button class="bigbtn alt" id="again" style="max-width:420px;margin-top:14px">↻ ПРОЙТИ ЕЩЁ РАЗ</button>`;
+    el.hidden = false; haptic('ok');
+    $('#seeSalute').onclick = () => { el.hidden = true; setTimeout(() => { el.hidden = false; }, 9000); };
+    $('#again').onclick = () => { el.hidden = true; $('#hint').textContent = ''; startGame(0, freshState()); };
+  }, 2500);
+}
+
+// ====== Титульный экран ======
+const TITLE = {
+  s: 0,
+  update(dt) { TITLE.s += 40 * dt; },
+  draw(time) {
+    const s = TITLE.s;
+    sky(0, 'sunset', 112);
+    for (let k = -1; k < 4; k++) {
+      const bx = k * 60 - (s * .3 % 60), idx = k + Math.floor(s * .3 / 60);
+      R(bx, 60, 52, 52, '#3a2a6a');
+      for (let wy = 66; wy < 104; wy += 10) for (let wx = 5; wx < 46; wx += 10) R(bx + wx, wy, 5, 6, (wx + wy + idx * 7) % 3 ? '#2a1d5a' : '#ffe58a');
+    }
+    R(0, 112, W, 32, '#55556a'); for (let x = -(s % 16); x < W; x += 16) R(x, 112, 1, 18, '#4a4a5e');
+    const fr = Math.floor(time * 8) % 2;
+    drawChar(ctx, CH['Захар'], 40, FEET - 18, fr, false);
+    drawChar(ctx, CH['Олег'], 56, FEET - 18, 1 - fr, false);
+    drawChar(ctx, CH['Женя'], 74, FEET - 18, fr, false);
+    const bob = Math.round(Math.sin(time * 2) * 3);
+    drawSpr(ctx, BOTTLE, 114, 10 + bob, false, 4);
+    R(128, 48 + bob, 18, 9, '#ffd83a'); ptext('-95%', 137, 50 + bob, '#c00', 'center', 5);
+    ptext('OH!', 8, 12, '#fff', 'left', 16); ptext('DESSERT', 8, 34, '#ffd83a', 'left', 10);
+    ptext('КВЕСТ НА УЦЕНКУ', 8, 52, '#fff', 'left', 6);
+  },
+};
+
+// ====== Запуск ======
+async function startGame(from, st) {
+  state = st; updateWallet();
+  showPanel('none');
+  for (let i = from; i < CHAPTERS.length; i++) {
+    state.ch = i; save();
+    await CHAPTERS[i]();
+  }
+}
+(async function init() {
+  mode = TITLE; showPanel('title');
+  requestAnimationFrame(loop);
+  try { await Promise.race([Promise.all([document.fonts.load('8px "Press Start 2P"'), document.fonts.load('18px Tiny5')]), new Promise(r => setTimeout(r, 2500))]); } catch (e) {}
+  const dev = new URLSearchParams(location.search).get('ch');
+  if (dev) { const s = freshState(); s.coins = [500, 100, 50, 50, 10, 10, 10, 10, 200]; startGame(+dev - 1, s); return; }
+  const saved = load();
+  if (saved && saved.ch > 0 && saved.ch < CHAPTERS.length) {
+    const b = $('#btnResume'); b.hidden = false; b.textContent = '▶ ПРОДОЛЖИТЬ (ГЛ.' + (saved.ch + 1) + ')';
+    b.onclick = () => { haptic('light'); startGame(saved.ch, saved); };
+    $('#btnPlay').textContent = '↻ НАЧАТЬ ЗАНОВО';
+  }
+  $('#btnPlay').onclick = () => { haptic('medium'); startGame(0, freshState()); };
+})();
+</script>
+</body>
+</html>
