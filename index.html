@@ -125,9 +125,9 @@ const CONFIG = {
   hero: 'Женя',
   age: 21,
   wish: 'Пусть жизнь будет как Ох Дезерт по уценке: сладкой, неожиданной и почти бесплатной. ' +
-        'Пусть рядом всегда будут пацаны, которые готовы ждать завоз пять часов ради тебя. ' +
+        'Пусть рядом всегда будут Ира, которая любит тебя, и пацаны, которые готовы ждать завоз пять часов ради тебя. ' +
         'И пусть каждый жёлтый ценник будет твоим!',
-  from: 'С любовью, твои друзья',
+  from: 'С любовью, Ира, Олег и Захар',
 };
 
 // ====== Telegram ======
@@ -195,20 +195,22 @@ const BAG = spr(['.WW......WW.', '.W.W....W.W.', '.W..W..W..W.', '.WWWWWWWWWW.',
   'WWWWWWWWWWWW', 'WWWRWWWWRWWW', 'WWWWRRRRWWWW', 'wWWWWWWWWWWw', '.wwwwwwwwww.'], { W: '#f4f4f4', w: '#cfcfd8', R: '#ff5fa2' });
 const BRAIN = spr(['..PPPPP...', '.PpPPpPP..', 'PPPpPPPpP.', 'PpPPPpPPP.', 'PPPpPPPpPP', '.PPPPpPPP.', '..PPPPPP..', '....PP....'], { P: '#ff8ac0', p: '#c0508a' });
 const TERM = spr(['GGGGGGGG', 'GKKKKKKG', 'GKggggKG', 'GKggggKG', 'GKKKKKKG', 'GGGGGGGG', '..GGGG..', '..GGGG..', '..GGGG..', '.GGGGGG.'], { G: '#9aa0aa', K: '#222', g: '#3bd18a' });
-const PHONE = spr(['KKKKKKK', 'KSSSSSK', 'KSGGGSK', 'KSGWGSK', 'KSGGGSK', 'KSSSSSK', 'KSSSSSK', 'KSSSSSK', 'KKKKKKK', 'KKKWKKK', 'KKKKKKK'], { K: '#222', S: '#5ad1ff', G: '#3bd18a', W: '#fff' });
+const CAKE = spr(['.Y...Y...Y.', '.W...R...W.', 'PPPPPPPPPPP', 'PwPPwPPwPPP', 'CCCCCCCCCCC', 'CCRCCRCCRCC', 'PPPPPPPPPPP', 'CCCCCCCCCCC', 'TTTTTTTTTTT'],
+  { Y: '#ffd83a', W: '#fff', R: '#ff5fa2', P: '#ff9ad0', w: '#fff', C: '#f7efd6', T: '#bbb' });
 
 // ====== Персонажи ======
 const CH = {
   'Женя':      { skin: '#f2c39b', hair: '#5a3a22', shirt: '#ff5fa2', pants: '#2b3a8a', shoes: '#222', hat: 'party' },
   'Олег':      { skin: '#f0bf96', hair: '#1e1e1e', shirt: '#3a8ee8', pants: '#333', shoes: '#eee', glasses: true },
   'Захар':     { skin: '#e9b48a', hair: '#7a4a2a', shirt: '#4cc06a', pants: '#4a3a2a', shoes: '#222', hat: 'cowboy' },
+  'Ира':       { skin: '#f6cfb0', hair: '#4a2a1a', shirt: '#b98aff', pants: '#3a2a6a', shoes: '#fff', long: true, skirt: true },
   'Галя':      { skin: '#f3c9a5', hair: '#e2512a', shirt: '#2a6ad0', pants: '#333', shoes: '#222', long: true, apron: true },
   'Баба Зина': { skin: '#efc3a0', hair: '#aaa', shirt: '#7a3aa0', pants: '#5a2a7a', shoes: '#333', hat: 'scarf', scarf: '#d23a3a', skirt: true },
   'Охранник':  { skin: '#e8b890', hair: '#222', shirt: '#2a3040', pants: '#1a1e26', shoes: '#000', hat: 'cap' },
   'Самокатчик':{ skin: '#f0c0a0', hair: '#333', shirt: '#ffb020', pants: '#333', shoes: '#222', hat: 'helmet' },
 };
 const COLORS = { 'Женя': '#ff5fa2', 'Олег': '#5ad1ff', 'Захар': '#7cf08a', 'Галя': '#ff8a5c', 'Баба Зина': '#d8a0ff', 'Охранник': '#c8c8ff',
-  'Голубь': '#cfd4e0', 'Касса': '#3bd18a', 'Голос в голове': '#ff8ac0', 'Все': '#ffd83a' };
+  'Ира': '#c8a0ff', 'Голубь': '#cfd4e0', 'Касса': '#3bd18a', 'Голос в голове': '#ff8ac0', 'Все': '#ffd83a' };
 
 function drawChar(c, cfg, x, y, frame, flip) {
   x = Math.round(x); y = Math.round(y);
@@ -421,6 +423,8 @@ const WORLD = {
       const isSpeaker = world.speaker === a.n || (world.speaker === 'Все' && ['Женя', 'Олег', 'Захар'].includes(a.n));
       if (a.n === 'Голубь') {
         drawSpr(ctx, PIGEON, a.x - cam, FEET - 6, a.face > 0);
+      } else if (a.n === 'Торт') {
+        drawSpr(ctx, CAKE, a.x - cam, 92);
       } else {
         const fr = a.moving ? Math.floor(a.dist / 4) % 2 : 0;
         drawChar(ctx, CH[a.n], a.x - cam, FEET - 18, fr, a.face < 0);
@@ -560,48 +564,7 @@ function playMode(m, pad) {
   });
 }
 
-// --- 1. Разбуди Захара
-function makeWake() {
-  const NEED = 35, TIME = 10;
-  const m = {
-    reset() { m.count = 0; m.started = 0; m.left = TIME; m.shake = 0; m.pointer = (t) => { if (t === 'down') m.onA(); }; },
-    onA() {
-      if (!m.active) return;
-      if (!m.started) m.started = performance.now();
-      m.count++; m.shake = .15; haptic('light');
-      if (m.count >= NEED) m.finish(true);
-    },
-    update(dt) {
-      m.shake = Math.max(0, m.shake - dt);
-      if (m.active && m.started) { m.left = TIME - (performance.now() - m.started) / 1000; if (m.left <= 0) m.finish(false); }
-    },
-    draw(t) {
-      R(0, 0, W, H, '#1e2a5a'); for (let x = 0; x < W; x += 10) R(x, 0, 5, 112, '#22306a');
-      R(110, 20, 30, 24, '#0b0a24'); R(112, 22, 26, 20, '#141238'); circ(130, 30, 4, '#ffe8a0');
-      R(0, 112, W, 32, '#4a3a2a');
-      R(20, 98, 90, 14, '#5a3a1a'); R(20, 86, 5, 26, '#5a3a1a'); R(24, 94, 84, 5, '#eee');
-      const frac = (m.count || 0) / NEED;
-      ctx.save(); ctx.translate(30, 98); ctx.rotate(-Math.PI / 2); drawChar(ctx, CH['Захар'], -2, -2, 0, false); ctx.restore();
-      R(46, 90, 60, 8, '#4a7ad0'); R(46, 90, 60, 1, '#7aa0e8');
-      const zs = frac > .75 ? '!' : 'Z';
-      for (let i = 0; i < 3; i++) ptext(zs, 40 + i * 8, 76 - ((t * 12 + i * 8) % 24), '#fff');
-      const sx = m.shake > 0 ? (Math.random() * 4 - 2) : 0;
-      drawSpr(ctx, PHONE, 124 + sx, 70, false, 2);
-      bar(10, 10, 140, 6, frac, '#ffd83a');
-      ptext((m.count || 0) + '/' + NEED, 10, 20, '#fff');
-      ptext((m.started ? Math.max(0, m.left) : TIME).toFixed(1) + 'с', 150, 20, '#fff', 'right');
-    },
-  };
-  return m;
-}
-async function gameWake() {
-  const m = makeWake(); m.reset(); mode = m;
-  await say('Рассказчик', 'Захар спит. Захар всегда спит до двух часов дня. Сделай 35 звонков за 10 секунд — жми ЗВОНИТЬ как не в себя! Таймер пойдёт с первого нажатия.');
-  await retryLoop(() => playMode(m, { A: '📞 ЗВОНИТЬ' }), 'Захар перевернулся на другой бок и пробормотал «ещё пять минуточек»… Давай ещё раз.');
-  haptic('ok');
-}
-
-// --- 2. Дорога (платформер)
+// --- 1. Дорога (платформер)
 function makeRunner() {
   const DUR = DEV ? 6 : 35, PX = 44, GRAV = 560, JUMP = 205;
   const TYPES = [
@@ -692,7 +655,7 @@ async function gameRunner() {
   await say('Рассказчик', 'Дошли! Мелочи в кармане: ' + rub(sumCoins(state.coins)) + '.');
 }
 
-// --- 3. Завоз (ловля)
+// --- 2. Завоз (ловля)
 function makeCatch(NEED) {
   const BAD = [FISH, KEFIR, ONION, CAN];
   const DUR = 50;
@@ -756,7 +719,7 @@ async function gameCatch() {
   await say('Рассказчик', 'Завоз разгружен! Где-то вдалеке грузчик Валера нервно закурил.');
 }
 
-// --- 4. Босс: Баба Зина
+// --- 3. Босс: Баба Зина
 function makeBoss() {
   const m = {
     EV: [
@@ -808,7 +771,7 @@ async function gameBoss() {
   haptic('ok');
 }
 
-// --- 5. Касса: ровно 6,90
+// --- 4. Касса: ровно 6,90
 function canPay(coins, target) {
   const dp = new Array(target + 1).fill(false); dp[0] = true;
   for (const c of coins) for (let s = target; s >= c; s--) if (dp[s - c]) dp[s] = true;
@@ -898,7 +861,21 @@ const CHAPTERS = [
     await lines([
       ['Рассказчик', 'Сегодня Жене исполняется 21. Возраст, когда ты уже можешь всё. Даже легально пить в Америке.'],
       ['Женя', 'Ммм… Я проснулся. Мне двадцать один. Я взрослый мужчина.'],
-      ['Женя', 'И как взрослый мужчина я хочу только одного…'],
+      ['Рассказчик', '*бзз-бзз* — звонит телефон. На экране: «Ира ❤️».'],
+    ]);
+    world.phone = true;
+    await lines([
+      ['Ира', 'Женя! С днём рождения, любимый! 🎉'],
+      ['Ира', 'Двадцать один тебе очень идёт. Ты сегодня главный человек на свете, понял?'],
+      ['Женя', 'Спасибо, Ир ❤️ Ты первая поздравила.'],
+      ['Ира', 'Конечно первая. Вечером увидимся — у меня для тебя сюрприз.'],
+      ['Женя', 'Какой?'],
+      ['Ира', 'Сюрприз, Жень. Это значит, что я не скажу. Целую!'],
+    ]);
+    world.phone = false;
+    await lines([
+      ['Женя', 'Лучшее утро. Осталось только одно…'],
+      ['Женя', 'Как взрослый мужчина я хочу только одного…'],
       ['Голос в голове', 'Ох Дезерт.'],
       ['Женя', 'Ох. Дезерт.'],
     ]);
@@ -927,15 +904,11 @@ const CHAPTERS = [
       ['Олег', '…'],
       ['Олег', 'Я уже обуваюсь.'],
       ['Женя', 'Теперь Захар.'],
-      ['Рассказчик', 'Захар не берёт трубку. Захар никогда не берёт трубку до двух часов дня.'],
     ]);
-    await gameWake();
-    setRoom('home', { x: 64, clock: '13:02' }); world.phone = true;
+    $('#clock').textContent = '🕒 13:02';
     await lines([
-      ['Захар', 'Алё… Женёк? С днём рождения, братан… А чё так рано?'],
-      ['Женя', 'Уже час дня.'],
-      ['Захар', 'Вот и я говорю — рано.'],
-      ['Женя', 'Встречаемся у подъезда. Миссия: Ох Дезерт по уценке.'],
+      ['Захар', 'Женёк! С днём рождения, братан! Двадцать один — красавчик!'],
+      ['Женя', 'Спасибо, брат. Встречаемся у подъезда. Миссия: Ох Дезерт по уценке.'],
       ['Захар', 'Понял. Беру пакет-майку. Это серьёзно.'],
     ]);
     world.phone = false;
@@ -1157,7 +1130,7 @@ const CHAPTERS = [
     chapterHud('ФИНАЛ');
     setRoom('bench', { x: 120, face: -1, clock: '19:40', sky: 'night', party: BOYS });
     await walk(44, '◀ НА ЛАВОЧКУ');
-    addActor('Голубь', 90, -1);
+    addActor('Голубь', 136, -1);
     await lines([
       ['Рассказчик', 'Они вернулись на лавочку. Над районом зажглись фонари. Голубь смотрел с уважением.'],
       ['Рассказчик', '*щёлк* — открылась синяя крышечка.'],
@@ -1166,15 +1139,30 @@ const CHAPTERS = [
       ['Олег', 'Ну как?'],
       ['Женя', 'Это лучшие шесть рублей девяносто копеек в моей жизни.'],
       ['Захар', 'Дай глотнуть.'],
-      ['Женя', 'Нет.'],
-      ['Захар', 'Я разгружал!'],
-      ['Женя', '…Ладно. По глотку. Сегодня можно.'],
+      ['Женя', 'Подожди. Первый глоток — не тебе.'],
     ]);
-    if (state.shawarma) await say('Захар', 'Это за мою куртку, которую Олег уделал шаурмой.');
+    addActor('Ира', 170, -1);
+    await moveActor('Ира', 86);
     await lines([
+      ['Ира', 'Вот ты где, именинник! Я так и знала, что ты весь день охотишься за уценкой.'],
+      ['Женя', 'Ира! Смотри: Ох Дезерт. Шесть девяносто. Мы его добыли.'],
+      ['Ира', 'Я тобой горжусь. Честно. Только ты мог превратить днюху в квест.'],
+      ['Женя', 'Первый глоток — тебе.'],
+      ['Ира', 'М-м… Банановый. Сладкий, как ты.'],
+      ['Захар', 'А я разгружал!'],
+      ['Женя', 'Ты — второй, брат. Сегодня можно.'],
+    ]);
+    if (state.shawarma) await say('Захар', 'И это мне за куртку, которую Олег уделал шаурмой.');
+    addActor('Торт', 28, -1);
+    await lines([
+      ['Ира', 'А теперь — сюрприз.'],
+      ['Рассказчик', 'Ира достала торт. На нём горели свечки: двадцать одна. Олег пересчитал дважды.'],
+      ['Ира', 'Женя, с днём рождения. Ты самый смешной, добрый и упрямый человек, которого я знаю. Даже Ох Дезерт ты покупаешь с характером.'],
+      ['Ира', 'Пусть у тебя всё получается — так же, как сегодня. Я тебя люблю. Загадывай желание!'],
+      ['Рассказчик', 'Женя загадал желание и задул все двадцать одну свечку с первого раза.'],
       ['Олег', 'Женя. Тост.'],
-      ['Женя', 'За двадцать один. За пацанов. За уценку.'],
-      ['Все', 'ЗА УЦЕНКУ!!!'],
+      ['Женя', 'За двадцать один. За Иру. За пацанов. И за уценку.'],
+      ['Все', 'ЗА ЖЕНЮ!!!'],
       ['Голубь', 'Курлык!'],
     ]);
     showFinal();
